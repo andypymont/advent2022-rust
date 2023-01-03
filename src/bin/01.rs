@@ -2,7 +2,11 @@ pub fn read_totals_from_input(input: &str) -> Vec<u32> {
     let mut elves: Vec<u32> = Vec::new();
 
     for carried in input.split("\n\n") {
-        let total = carried.trim().split('\n').map(|s| s.parse().unwrap_or(0)).sum();
+        let total = carried
+            .trim()
+            .split('\n')
+            .map(|s| s.parse().unwrap_or(0))
+            .sum();
         elves.push(total);
     }
 

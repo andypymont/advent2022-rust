@@ -3,15 +3,17 @@ use std::collections::HashSet;
 fn priority(item: Option<&char>) -> u32 {
     match item {
         None => 0,
-        Some(c) => if c.is_lowercase() {
-            (*c as u32) - 96
-        } else {
-            (*c as u32) - 38
+        Some(c) => {
+            if c.is_lowercase() {
+                (*c as u32) - 96
+            } else {
+                (*c as u32) - 38
+            }
         }
     }
 }
 
-fn backpack_priority(backpack: &str) -> u32 {    
+fn backpack_priority(backpack: &str) -> u32 {
     let mut compartment_one: HashSet<char> = HashSet::new();
     let mut compartment_two: HashSet<char> = HashSet::new();
 
@@ -33,7 +35,11 @@ fn group_badge_priority(first: &str, second: &str, third: &str) -> u32 {
     let first_set: HashSet<char> = HashSet::from_iter(first.chars());
     let second_set: HashSet<char> = HashSet::from_iter(second.chars());
     let third_set: HashSet<char> = HashSet::from_iter(third.chars());
-    priority(first_set.intersection(&second_set).find(|item| third_set.contains(item)))
+    priority(
+        first_set
+            .intersection(&second_set)
+            .find(|item| third_set.contains(item)),
+    )
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -44,7 +50,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 pub fn part_two(input: &str) -> Option<u32> {
     let mut total = 0;
     let mut backpacks = input.lines().peekable();
-    
+
     while backpacks.peek().is_some() {
         let first = backpacks.next().unwrap_or("");
         let second = backpacks.next().unwrap_or("");
@@ -88,7 +94,14 @@ mod tests {
 
     #[test]
     fn test_first_group() {
-        assert_eq!(group_badge_priority("vJrwpWtwJgWrhcsFMMfFFhFp", "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL", "PmmdzqPrVvPwwTWBwg"), 18);
+        assert_eq!(
+            group_badge_priority(
+                "vJrwpWtwJgWrhcsFMMfFFhFp",
+                "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL",
+                "PmmdzqPrVvPwwTWBwg"
+            ),
+            18
+        );
     }
 
     #[test]
