@@ -1,4 +1,13 @@
-use std::{collections::HashSet, ops::Add, str::FromStr};
+use std::collections::HashSet;
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq)]
+enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Point {
@@ -6,32 +15,33 @@ struct Point {
     y: i32,
 }
 
-impl Add for Point {
-    type Output = Point;
-
-    fn add(self, other: Point) -> Self::Output {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
 impl Point {
-    fn toward(&self, other: &Self) -> Self {
+    fn neighbour_in_direction(&self, direction: &Direction) -> Self {
         Self {
-            x: (other.x - self.x).signum(),
-            y: (other.y - self.y).signum(),
+            x: match direction {
+                Direction::Left => self.x - 1,
+                Direction::Right => self.x + 1,
+                _ => self.x,
+            },
+            y: match direction {
+                Direction::Up => self.y + 1,
+                Direction::Down => self.y - 1,
+                _ => self.y,
+            },
         }
     }
-}
 
-#[derive(Debug, PartialEq)]
-enum Step {
-    Up,
-    Right,
-    Down,
-    Left,
+    fn follow(&self, other: &Self) -> Self {
+        let candidate = Self {
+            x: self.x + (other.x - self.x).signum(),
+            y: self.y + (other.y - self.y).signum(),
+        };
+        if candidate.x == other.x && candidate.y == other.y {
+            *self
+        } else {
+            candidate
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -39,8 +49,8 @@ struct ParseInstructionError;
 
 #[derive(Debug, PartialEq)]
 struct Instruction {
-    step: Step,
-    times: u32,
+    direction: Direction,
+    steps: u32,
 }
 
 impl FromStr for Instruction {
@@ -54,82 +64,67 @@ impl FromStr for Instruction {
 
         match parts[1].parse::<u32>() {
             Err(_) => Err(ParseInstructionError),
-            Ok(times) => {
-                let step = match parts[0] {
-                    "U" => Ok(Step::Up),
-                    "D" => Ok(Step::Down),
-                    "L" => Ok(Step::Left),
-                    "R" => Ok(Step::Right),
+            Ok(steps) => {
+                let direction = match parts[0] {
+                    "U" => Ok(Direction::Up),
+                    "D" => Ok(Direction::Down),
+                    "L" => Ok(Direction::Left),
+                    "R" => Ok(Direction::Right),
                     _ => Err(ParseInstructionError),
                 }?;
-                Ok(Instruction { step, times })
+                Ok(Instruction { direction, steps })
             }
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Rope {
-    head: Point,
-    tail: Point,
+    knots: Vec<Point>,
 }
 
 impl Rope {
-    fn new() -> Rope {
-        Rope {
-            head: Point { x: 0, y: 0 },
-            tail: Point { x: 0, y: 0 },
+    fn new(len: usize) -> Self {
+        let mut knots = Vec::new();
+
+        for _ in 0..len {
+            knots.push(Point { x: 0, y: 0 });
         }
+
+        Rope { knots }
     }
 
-    fn make_step(&self, step: &Step) -> Self {
-        let head = Point {
-            x: self.head.x
-                + match step {
-                    Step::Left => -1,
-                    Step::Right => 1,
-                    _ => 0,
-                },
-            y: self.head.y
-                + match step {
-                    Step::Up => 1,
-                    Step::Down => -1,
-                    _ => 0,
-                },
-        };
+    fn execute_step(&self, direction: &Direction) -> Self {
+        let mut knots = Vec::new();
+        let mut prev = self.knots[0].neighbour_in_direction(direction);
+        knots.push(prev);
 
-        let move_tail = self.tail + self.tail.toward(&head);
-        let tail = if move_tail == head {
-            self.tail
-        } else {
-            move_tail
-        };
+        for ix in 1..self.knots.len() {
+            let knot = self.knots[ix].follow(&prev);
+            knots.push(knot);
+            prev = knot;
+        }
 
-        Rope { head, tail }
+        Rope { knots }
     }
 
-    fn execute_instruction(self, instruction: Instruction) -> (Self, HashSet<Point>) {
-        let mut visited = HashSet::new();
-        let mut rope = self;
-        for _ in 0..instruction.times {
-            rope = rope.make_step(&instruction.step);
-            visited.insert(rope.tail);
-        }
-        (rope, visited)
+    fn tail(&self) -> Point {
+        *self.knots.last().unwrap_or(&Point { x: 0, y: 0 })
     }
 }
 
-fn tail_visits(input: &str, _tail_length: usize) -> usize {
-    let mut rope = Rope::new();
+fn tail_visits(input: &str, knots: usize) -> usize {
+    let mut rope = Rope::new(knots);
     let mut visited: HashSet<Point> = HashSet::new();
 
     for line in input.lines() {
-        rope = match line.parse::<Instruction>() {
-            Err(_) => rope,
+        match line.parse::<Instruction>() {
+            Err(_) => {}
             Ok(instruction) => {
-                let (moved, newly_visited) = rope.execute_instruction(instruction);
-                visited.extend(newly_visited);
-                moved
+                for _ in 0..instruction.steps {
+                    rope = rope.execute_step(&instruction.direction);
+                    visited.insert(rope.tail());
+                }
             }
         };
     }
@@ -138,11 +133,11 @@ fn tail_visits(input: &str, _tail_length: usize) -> usize {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    Some(tail_visits(input, 1))
+    Some(tail_visits(input, 2))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    Some(tail_visits(input, 10))
 }
 
 fn main() {
@@ -156,71 +151,77 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_step_head_from_start() {
-        let before = Rope {
-            head: Point { x: 0, y: 0 },
-            tail: Point { x: 0, y: 0 },
-        };
-        let after = Rope {
-            head: Point { x: 1, y: 0 },
-            tail: Point { x: 0, y: 0 },
-        };
-        assert_eq!(before.make_step(&Step::Right), after);
+    fn test_point_follow() {
+        assert_eq!(
+            Point { x: 1, y: 1 }.follow(&Point { x: 1, y: 3 }),
+            Point { x: 1, y: 2 }
+        );
     }
 
     #[test]
-    fn test_step_head_with_following_tail() {
-        let before = Rope {
-            head: Point { x: 1, y: 2 },
-            tail: Point { x: 1, y: 1 },
-        };
-        let after = Rope {
-            head: Point { x: 1, y: 3 },
-            tail: Point { x: 1, y: 2 },
-        };
-        assert_eq!(before.make_step(&Step::Up), after);
+    fn test_point_follow_but_dont_overlap() {
+        assert_eq!(
+            Point { x: 1, y: 1 }.follow(&Point { x: 1, y: 2 }),
+            Point { x: 1, y: 1 }
+        );
     }
 
     #[test]
-    fn test_step_head_diagonally_with_following_tail() {
-        let before = Rope {
-            head: Point { x: 2, y: 2 },
-            tail: Point { x: 1, y: 1 },
-        };
-        let after = Rope {
-            head: Point { x: 3, y: 2 },
-            tail: Point { x: 2, y: 2 },
-        };
-        assert_eq!(before.make_step(&Step::Right), after);
+    fn test_point_neighbour_in_direction() {
+        assert_eq!(
+            Point { x: 2, y: 3 }.neighbour_in_direction(&Direction::Up),
+            Point { x: 2, y: 4 }
+        );
     }
 
     #[test]
     fn test_parse_instruction() {
-        let expected = Ok(Instruction {
-            step: Step::Right,
-            times: 4,
-        });
-        assert_eq!("R 4".parse(), expected);
+        assert_eq!(
+            "R 4".parse(),
+            Ok(Instruction {
+                direction: Direction::Right,
+                steps: 4
+            }),
+        )
     }
 
     #[test]
-    fn test_execute_instruction() {
-        let before = Rope {
-            head: Point { x: 0, y: 0 },
-            tail: Point { x: 0, y: 0 },
-        };
-        let instruction = Instruction {
-            step: Step::Right,
-            times: 4,
-        };
-        let expected = Rope {
-            head: Point { x: 4, y: 0 },
-            tail: Point { x: 3, y: 0 },
-        };
+    fn test_new_rope() {
+        let rope = Rope::new(2);
+        assert_eq!(rope.knots, vec![Point { x: 0, y: 0 }, Point { x: 0, y: 0 }]);
+    }
 
-        let (after, visited) = before.execute_instruction(instruction);
-        assert_eq!(after, expected);
-        assert_eq!(visited.len(), 4);
+    #[test]
+    fn test_step_rope_tail_doesnt_overlap() {
+        let before = Rope {
+            knots: vec![Point { x: 0, y: 0 }, Point { x: 0, y: 0 }],
+        };
+        assert_eq!(
+            before.execute_step(&Direction::Right).tail(),
+            Point { x: 0, y: 0 }
+        );
+    }
+
+    #[test]
+    fn test_step_rope_tail_follows() {
+        let before = Rope {
+            knots: vec![Point { x: 1, y: 2 }, Point { x: 1, y: 1 }],
+        };
+        assert_eq!(
+            before.execute_step(&Direction::Up).tail(),
+            Point { x: 1, y: 2 }
+        );
+    }
+
+    #[test]
+    fn test_step_rope_tail_follows_diagonally() {
+        let before = Rope {
+            knots: vec![Point { x: 2, y: 2 }, Point { x: 1, y: 1 }],
+        };
+        assert_eq!(
+            before.execute_step(&Direction::Right).tail(),
+            Point { x: 2, y: 2 }
+        );
     }
 
     #[test]
@@ -232,7 +233,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 9);
-        // assert_eq!(part_two(&input), Some(36));
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(36));
     }
 }
