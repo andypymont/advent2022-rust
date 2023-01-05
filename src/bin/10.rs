@@ -69,6 +69,27 @@ fn signal_strength(program_results: Vec<i32>) -> i32 {
         .sum()
 }
 
+fn crt_image(program_results: Vec<i32>) -> String {
+    let mut image = String::new();
+    let mut line = String::new();
+
+    for (ix, x) in program_results.iter().enumerate() {
+        let pixel = (ix % 40) as i32;
+        line.push(if *x - 1 == pixel || *x == pixel || *x + 1 == pixel {
+            '#'
+        } else {
+            '.'
+        });
+        if line.len() == 40 {
+            image.push_str(&line);
+            image.push('\n');
+            line = String::new();
+        };
+    }
+
+    image
+}
+
 pub fn part_one(input: &str) -> Option<i32> {
     match read_program(input) {
         Err(_) => None,
@@ -76,8 +97,11 @@ pub fn part_one(input: &str) -> Option<i32> {
     }
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<String> {
+    match read_program(input) {
+        Err(_) => None,
+        Ok(program) => Some(crt_image(run_program(program))),
+    }
 }
 
 fn main() {
@@ -155,6 +179,15 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 10);
-        assert_eq!(part_two(&input), None);
+        let image = concat![
+            "##..##..##..##..##..##..##..##..##..##..\n",
+            "###...###...###...###...###...###...###.\n",
+            "####....####....####....####....####....\n",
+            "#####.....#####.....#####.....#####.....\n",
+            "######......######......######......####\n",
+            "#######.......#######.......#######.....\n",
+        ]
+        .to_string();
+        assert_eq!(part_two(&input), Some(image));
     }
 }
