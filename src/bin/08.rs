@@ -100,12 +100,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     let forest = read_forest(input);
     let trees = trees_in_forest(&forest);
 
-    Some(
-        trees
-            .iter()
-            .map(|tree| u32::from(tree.visible))
-            .sum(),
-    )
+    Some(trees.iter().map(|tree| u32::from(tree.visible)).sum())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
