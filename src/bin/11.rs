@@ -2,18 +2,28 @@ use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
+enum WorryManagementStrategy {
+    DivideByThree,
+    Modulo(u64),
+}
+
+#[derive(Debug, PartialEq)]
 enum Operation {
-    Add(u32),
-    Multiply(u32),
+    Add(u64),
+    Multiply(u64),
     Square,
 }
 
 impl Operation {
-    fn apply(&self, item: u32) -> u32 {
-        match self {
+    fn apply(&self, item: u64, strategy: &WorryManagementStrategy) -> u64 {
+        let value = match self {
             Operation::Add(operand) => item + operand,
             Operation::Multiply(operand) => item * operand,
             Operation::Square => item * item,
+        };
+        match strategy {
+            WorryManagementStrategy::DivideByThree => value / 3,
+            WorryManagementStrategy::Modulo(m) => value % m,
         }
     }
 }
@@ -34,7 +44,7 @@ impl FromStr for Operation {
         if parts.len() != 2 {
             Err(ParseOperationError)
         } else {
-            let operand: u32 = parts[1].parse().map_err(|_| ParseOperationError)?;
+            let operand: u64 = parts[1].parse().map_err(|_| ParseOperationError)?;
             match parts[0] {
                 "*" => Ok(Operation::Multiply(operand)),
                 "+" => Ok(Operation::Add(operand)),
@@ -47,9 +57,9 @@ impl FromStr for Operation {
 #[derive(Debug, PartialEq)]
 struct Monkey {
     id: usize,
-    starting_items: Vec<u32>,
+    starting_items: Vec<u64>,
     operation: Operation,
-    test: u32,
+    test: u64,
     throw_if_true: usize,
     throw_if_false: usize,
 }
@@ -63,10 +73,10 @@ impl FromStr for Monkey {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut id: Result<usize, Self::Err> = Err(ParseMonkeyError);
         let mut operation: Result<Operation, Self::Err> = Err(ParseMonkeyError);
-        let mut test: Result<u32, Self::Err> = Err(ParseMonkeyError);
+        let mut test: Result<u64, Self::Err> = Err(ParseMonkeyError);
         let mut throw_if_true: Result<usize, Self::Err> = Err(ParseMonkeyError);
         let mut throw_if_false: Result<usize, Self::Err> = Err(ParseMonkeyError);
-        let mut starting_items: Vec<u32> = Vec::new();
+        let mut starting_items: Vec<u64> = Vec::new();
 
         for line in s.lines() {
             let line = line.trim();
@@ -84,7 +94,7 @@ impl FromStr for Monkey {
                     .unwrap_or("")
                     .split(", ")
                 {
-                    if let Ok(item) = item_str.parse::<u32>() {
+                    if let Ok(item) = item_str.parse::<u64>() {
                         starting_items.push(item);
                     }
                 }
@@ -138,22 +148,30 @@ fn parse_monkeys(input: &str) -> Vec<Monkey> {
     monkeys
 }
 
-fn monkey_business(monkeys: &Vec<Monkey>, rounds: u32) -> u32 {
-    let mut items: HashMap<usize, VecDeque<u32>> = HashMap::new();
-    let mut inspection_counts: HashMap<usize, u32> = HashMap::new();
+fn monkey_business(monkeys: &Vec<Monkey>, rounds: u64, part_two: bool) -> u64 {
+    let mut items: HashMap<usize, VecDeque<u64>> = HashMap::new();
+    let mut inspection_counts: HashMap<usize, u64> = HashMap::new();
+    let mut mod_prod = 1;
     for monkey in monkeys {
-        let mut inventory: VecDeque<u32> = VecDeque::new();
+        let mut inventory: VecDeque<u64> = VecDeque::new();
         inventory.extend(monkey.starting_items.iter());
         items.insert(monkey.id, inventory);
+        mod_prod *= monkey.test;
     }
+
+    let strategy = if part_two {
+        WorryManagementStrategy::Modulo(mod_prod)
+    } else {
+        WorryManagementStrategy::DivideByThree
+    };
 
     for _ in 0..rounds {
         for monkey in monkeys {
             // inspect and queue items for throwing
-            let mut thrown: Vec<(usize, u32)> = Vec::new();
+            let mut thrown: Vec<(usize, u64)> = Vec::new();
             items.entry(monkey.id).and_modify(|inventory| {
                 while let Some(item) = inventory.pop_front() {
-                    let item = monkey.operation.apply(item) / 3;
+                    let item = monkey.operation.apply(item, &strategy);
                     let target = if item % monkey.test == 0 {
                         monkey.throw_if_true
                     } else {
@@ -164,7 +182,7 @@ fn monkey_business(monkeys: &Vec<Monkey>, rounds: u32) -> u32 {
             });
 
             // record the number of inspections
-            let inspections = thrown.len() as u32;
+            let inspections = thrown.len() as u64;
             inspection_counts
                 .entry(monkey.id)
                 .and_modify(|i| *i += inspections)
@@ -180,7 +198,7 @@ fn monkey_business(monkeys: &Vec<Monkey>, rounds: u32) -> u32 {
         }
     }
 
-    let (one, two): (u32, u32) =
+    let (one, two): (u64, u64) =
         inspection_counts
             .values()
             .fold((0, 0), |(biggest, big), count| {
@@ -195,14 +213,14 @@ fn monkey_business(monkeys: &Vec<Monkey>, rounds: u32) -> u32 {
     one * two
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+pub fn part_one(input: &str) -> Option<u64> {
     let monkeys = parse_monkeys(input);
-    Some(monkey_business(&monkeys, 20))
+    Some(monkey_business(&monkeys, 20, false))
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    // let monkeys = parse_monkeys(input);
-    None
+pub fn part_two(input: &str) -> Option<u64> {
+    let monkeys = parse_monkeys(input);
+    Some(monkey_business(&monkeys, 10_000, true))
 }
 
 fn main() {
@@ -301,12 +319,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_one(&input), Some(10605));
+        assert_eq!(part_one(&input), Some(10_605));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(2_713_310_158));
     }
 }
