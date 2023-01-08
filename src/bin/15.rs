@@ -200,8 +200,7 @@ fn beacon_position(sensors: &[Sensor], min_coord: i32, max_coord: i32) -> Option
             .filter(|pos| pos.within_bounds(min_coord, max_coord))
         {
             if !sensors.iter().any(|sensor| {
-                let range = sensor.covered_range_for_row(position.1);
-                position.0 >= range.0 && position.0 < range.1
+                sensor.location.manhattan_distance(&position) <= sensor.beacon_distance()
             }) {
                 return Some(position);
             }
