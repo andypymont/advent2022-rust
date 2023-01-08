@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Point(i32, i32);
 
 #[derive(Debug, PartialEq)]
@@ -27,6 +27,16 @@ impl FromStr for Point {
         } else {
             Err(ParsePointError)
         }
+    }
+}
+
+impl Point {
+    fn manhattan_distance(&self, other: &Point) -> i32 {
+        (self.0 - other.0).abs() + (self.1 - other.1).abs()
+    }
+
+    fn within_bounds(&self, min_coord: i32, max_coord: i32) -> bool {
+        self.0 >= min_coord && self.0 <= max_coord && self.1 >= min_coord && self.1 <= max_coord
     }
 }
 
@@ -62,8 +72,7 @@ impl FromStr for Sensor {
 
 impl Sensor {
     fn beacon_distance(&self) -> i32 {
-        (self.closest_beacon.0 - self.location.0).abs()
-            + (self.closest_beacon.1 - self.location.1).abs()
+        self.location.manhattan_distance(&self.closest_beacon)
     }
 
     fn covered_range_for_row(&self, row: i32) -> Range {
@@ -72,6 +81,62 @@ impl Sensor {
             Range(self.location.0, self.location.0)
         } else {
             Range(self.location.0 - dist, self.location.0 + dist + 1)
+        }
+    }
+
+    fn positions_just_outside_range(&self) -> SensorExteriorPositionIterator {
+        SensorExteriorPositionIterator::from_sensor(self)
+    }
+}
+
+struct SensorExteriorPositionIterator {
+    sensor_location: Point,
+    distance: i32,
+    position: i32,
+}
+
+impl SensorExteriorPositionIterator {
+    fn from_sensor(sensor: &Sensor) -> Self {
+        SensorExteriorPositionIterator {
+            sensor_location: sensor.location,
+            distance: sensor.beacon_distance() + 1,
+            position: 0,
+        }
+    }
+}
+
+impl Iterator for SensorExteriorPositionIterator {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let phase = self.position / self.distance;
+        let phase_pos = self.position % self.distance;
+
+        let point: Option<Point> = match phase {
+            0 => Some(Point(
+                self.sensor_location.0 + phase_pos,
+                self.sensor_location.1 + self.distance - phase_pos,
+            )),
+            1 => Some(Point(
+                self.sensor_location.0 + self.distance - phase_pos,
+                self.sensor_location.1 - phase_pos,
+            )),
+            2 => Some(Point(
+                self.sensor_location.0 - phase_pos,
+                self.sensor_location.1 - self.distance + phase_pos,
+            )),
+            3 => Some(Point(
+                self.sensor_location.0 - self.distance + phase_pos,
+                self.sensor_location.1 + phase_pos,
+            )),
+            _ => None,
+        };
+
+        if point.is_some() {
+            self.position += 1;
+            point
+        } else {
+            None
         }
     }
 }
@@ -128,12 +193,38 @@ fn non_beacon_positions(sensors: &[Sensor], row: i32) -> i32 {
     count - beacons_in_row
 }
 
+fn beacon_position(sensors: &[Sensor], min_coord: i32, max_coord: i32) -> Option<Point> {
+    for sensor in sensors {
+        for position in sensor
+            .positions_just_outside_range()
+            .filter(|pos| pos.within_bounds(min_coord, max_coord))
+        {
+            if !sensors.iter().any(|sensor| {
+                let range = sensor.covered_range_for_row(position.1);
+                position.0 >= range.0 && position.0 < range.1
+            }) {
+                return Some(position);
+            }
+        }
+    }
+
+    None
+}
+
 pub fn part_one(input: &str) -> Option<i32> {
     Some(non_beacon_positions(&parse_sensors(input), 2_000_000))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<i64> {
+    let result = beacon_position(&parse_sensors(input), 0, 4_000_000);
+    match result {
+        None => None,
+        Some(beacon) => {
+            let x = (beacon.0 as i64) * 4_000_000;
+            let y = beacon.1 as i64;
+            Some(x + y)
+        }
+    }
 }
 
 fn main() {
@@ -183,8 +274,32 @@ mod tests {
     }
 
     #[test]
+    fn test_sensor_exterior_position_iterator() {
+        let sensor = Sensor {
+            location: Point(0, 0),
+            closest_beacon: Point(2, 0),
+        };
+        let exterior: HashSet<Point> = sensor.positions_just_outside_range().collect();
+        assert_eq!(exterior.len(), 12);
+        assert_eq!(exterior.contains(&Point(1, 2)), true);
+        assert_eq!(exterior.contains(&Point(2, 1)), true);
+        assert_eq!(exterior.contains(&Point(3, 0)), true);
+        assert_eq!(exterior.contains(&Point(2, -1)), true);
+        assert_eq!(exterior.contains(&Point(1, -2)), true);
+        assert_eq!(exterior.contains(&Point(0, -3)), true);
+        assert_eq!(exterior.contains(&Point(-1, -2)), true);
+        assert_eq!(exterior.contains(&Point(-2, -1)), true);
+        assert_eq!(exterior.contains(&Point(-3, 0)), true);
+        assert_eq!(exterior.contains(&Point(-2, 1)), true);
+        assert_eq!(exterior.contains(&Point(-1, 2)), true);
+        assert_eq!(exterior.contains(&Point(0, 3)), true);
+        assert_eq!(exterior.contains(&Point(1, 1)), false);
+    }
+
+    #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 15);
-        assert_eq!(part_two(&input), None);
+        let sensors = parse_sensors(&input);
+        assert_eq!(beacon_position(&sensors, 0, 20), Some(Point(14, 11)));
     }
 }
