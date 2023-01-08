@@ -47,6 +47,7 @@ struct Range(i32, i32);
 struct Sensor {
     location: Point,
     closest_beacon: Point,
+    beacon_distance: i32,
 }
 
 impl FromStr for Sensor {
@@ -63,6 +64,7 @@ impl FromStr for Sensor {
             Ok(Sensor {
                 location,
                 closest_beacon,
+                beacon_distance: location.manhattan_distance(&closest_beacon),
             })
         } else {
             Err(ParsePointError)
@@ -71,12 +73,8 @@ impl FromStr for Sensor {
 }
 
 impl Sensor {
-    fn beacon_distance(&self) -> i32 {
-        self.location.manhattan_distance(&self.closest_beacon)
-    }
-
     fn covered_range_for_row(&self, row: i32) -> Range {
-        let dist = self.beacon_distance() - (self.location.1 - row).abs();
+        let dist = self.beacon_distance - (self.location.1 - row).abs();
         if dist < 0 {
             Range(self.location.0, self.location.0)
         } else {
@@ -99,7 +97,7 @@ impl SensorExteriorPositionIterator {
     fn from_sensor(sensor: &Sensor) -> Self {
         SensorExteriorPositionIterator {
             sensor_location: sensor.location,
-            distance: sensor.beacon_distance() + 1,
+            distance: sensor.beacon_distance + 1,
             position: 0,
         }
     }
@@ -200,7 +198,7 @@ fn beacon_position(sensors: &[Sensor], min_coord: i32, max_coord: i32) -> Option
             .filter(|pos| pos.within_bounds(min_coord, max_coord))
         {
             if !sensors.iter().any(|sensor| {
-                sensor.location.manhattan_distance(&position) <= sensor.beacon_distance()
+                sensor.location.manhattan_distance(&position) <= sensor.beacon_distance
             }) {
                 return Some(position);
             }
@@ -242,18 +240,10 @@ mod tests {
             "Sensor at x=2, y=18: closest beacon is at x=-2, y=15".parse(),
             Ok(Sensor {
                 location: Point(2, 18),
-                closest_beacon: Point(-2, 15)
+                closest_beacon: Point(-2, 15),
+                beacon_distance: 7,
             })
         );
-    }
-
-    #[test]
-    fn test_sensor_beacon_distance() {
-        let sensor = Sensor {
-            location: Point(9, 16),
-            closest_beacon: Point(10, 18),
-        };
-        assert_eq!(sensor.beacon_distance(), 3);
     }
 
     #[test]
@@ -261,6 +251,7 @@ mod tests {
         let sensor = Sensor {
             location: Point(9, 16),
             closest_beacon: Point(10, 16),
+            beacon_distance: 1,
         };
         assert_eq!(sensor.covered_range_for_row(16), Range(8, 11),);
     }
@@ -277,6 +268,7 @@ mod tests {
         let sensor = Sensor {
             location: Point(0, 0),
             closest_beacon: Point(2, 0),
+            beacon_distance: 2,
         };
         let exterior: HashSet<Point> = sensor.positions_just_outside_range().collect();
         assert_eq!(exterior.len(), 12);
