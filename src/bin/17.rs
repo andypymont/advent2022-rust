@@ -88,11 +88,18 @@ impl TetrisCycleState {
     }
 }
 
-#[derive(Debug)]
-struct TetrisCycle {
+#[derive(Debug, PartialEq)]
+struct TetrisCycleData {
     first_seen: usize,
     second_seen: usize,
     height_change: u64,
+}
+
+#[derive(Debug, PartialEq)]
+enum TetrisCycle {
+    None,
+    Detected(TetrisCycleData),
+    Removed,
 }
 
 #[derive(Debug)]
@@ -105,7 +112,7 @@ struct TetrisGame {
     occupied: HashSet<Point>,
     max_y_values: Vec<u64>,
     visited: HashMap<TetrisCycleState, (usize, u64)>,
-    cycle: Option<TetrisCycle>,
+    cycle: TetrisCycle,
 }
 
 impl TetrisGame {
@@ -127,7 +134,7 @@ impl TetrisGame {
             occupied: HashSet::new(),
             max_y_values: repeat(0).take((MAX_X + 1) as usize).collect(),
             visited: HashMap::new(),
-            cycle: None,
+            cycle: TetrisCycle::None,
         }
     }
 
@@ -153,11 +160,11 @@ impl TetrisGame {
             Point(2, self.max_y() + 4),
         );
 
-        if self.cycle.is_none() {
+        if self.cycle == TetrisCycle::None {
             let state = TetrisCycleState::from_game(self);
             let height = self.max_y();
             if let Some((first_seen, first_height)) = self.visited.get(&state) {
-                self.cycle = Some(TetrisCycle {
+                self.cycle = TetrisCycle::Detected(TetrisCycleData {
                     first_seen: *first_seen,
                     second_seen: self.shape_ix,
                     height_change: height - first_height,
@@ -211,12 +218,12 @@ impl TetrisGame {
         while self.shape_ix < shapes {
             self.tick();
 
-            if let Some(cycle) = &self.cycle {
+            if let TetrisCycle::Detected(cycle) = &self.cycle {
                 let cycle_length = cycle.second_seen - cycle.first_seen;
                 let add_cycles = (shapes - cycle.second_seen) / cycle_length;
                 extra_height += add_cycles as u64 * cycle.height_change;
                 self.shape_ix += add_cycles * cycle_length;
-                self.cycle = None
+                self.cycle = TetrisCycle::Removed
             }
         }
 
