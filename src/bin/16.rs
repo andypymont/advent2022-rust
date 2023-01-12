@@ -27,10 +27,7 @@ impl FromStr for ValveInfo {
                 .unwrap_or("")
                 .parse()
                 .map_err(|_| ParseValveSystemError)?;
-            let tunnels = words[9..]
-                .iter()
-                .map(|s| s.replace(',', ""))
-                .collect();
+            let tunnels = words[9..].iter().map(|s| s.replace(',', "")).collect();
             Ok(ValveInfo {
                 name,
                 flow_rate,
