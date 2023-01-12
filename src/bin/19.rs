@@ -288,7 +288,7 @@ pub fn part_two(input: &str) -> Option<u32> {
                     }
                 }
             })
-            .product()
+            .product(),
     )
 }
 
