@@ -274,8 +274,22 @@ pub fn part_one(input: &str) -> Option<u32> {
     )
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    Some(
+        input
+            .lines()
+            .filter_map(|line| match line.parse::<Blueprint>() {
+                Err(_) => None,
+                Ok(blueprint) => {
+                    if blueprint.number <= 3 {
+                        Some(blueprint.most_geodes_openable(32))
+                    } else {
+                        None
+                    }
+                }
+            })
+            .product()
+    )
 }
 
 fn main() {
@@ -532,6 +546,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 19);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(3472));
     }
 }
