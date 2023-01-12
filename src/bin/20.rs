@@ -23,14 +23,12 @@ fn mix(list: Vec<i64>, rounds: usize) -> Vec<i64> {
     circle.extend(list.iter().enumerate());
 
     for _ in 0..rounds {
-        for each_ix in 0..list.len() {
-            while let Some((ix, value)) = circle.pop_front() {
-                if ix == each_ix {
-                    let dist = value.rem_euclid(circle.len() as i64) as usize;
-                    circle.rotate_left(dist);
-                    circle.push_back((ix, value));
-                    break;
-                }
+        for ix in 0..list.len() {
+            let pos = circle.iter().position(|i| i.0 == ix).unwrap_or(0);
+            circle.rotate_left(pos);
+            if let Some((ix, value)) = circle.pop_front() {
+                let dist = value.rem_euclid(circle.len() as i64) as usize;
+                circle.rotate_left(dist);
                 circle.push_back((ix, value));
             }
         }
