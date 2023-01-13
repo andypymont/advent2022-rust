@@ -41,15 +41,15 @@ impl FromStr for Operation {
 
         let s = s.strip_prefix("new = old ").unwrap_or("");
         let parts: Vec<&str> = s.split(' ').collect();
-        if parts.len() != 2 {
-            Err(ParseOperationError)
-        } else {
+        if parts.len() == 2 {
             let operand: u64 = parts[1].parse().map_err(|_| ParseOperationError)?;
-            match parts[0] {
-                "*" => Ok(Operation::Multiply(operand)),
-                "+" => Ok(Operation::Add(operand)),
+            match parts.first() {
+                Some(&"*") => Ok(Operation::Multiply(operand)),
+                Some(&"+") => Ok(Operation::Add(operand)),
                 _ => Err(ParseOperationError),
             }
+        } else {
+            Err(ParseOperationError)
         }
     }
 }
@@ -213,11 +213,13 @@ fn monkey_business(monkeys: &Vec<Monkey>, rounds: u64, part_two: bool) -> u64 {
     one * two
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u64> {
     let monkeys = parse_monkeys(input);
     Some(monkey_business(&monkeys, 20, false))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u64> {
     let monkeys = parse_monkeys(input);
     Some(monkey_business(&monkeys, 10_000, true))

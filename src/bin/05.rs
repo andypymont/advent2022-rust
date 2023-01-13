@@ -16,13 +16,13 @@ impl FromStr for Action {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let words: Vec<&str> = s.split(' ').collect();
 
-        if words.len() != 6 {
-            Err(ParseActionError)
-        } else {
+        if words.len() == 6 {
             let quantity: usize = words[1].parse().map_err(|_| ParseActionError)?;
             let from: usize = words[3].parse().map_err(|_| ParseActionError)?;
             let to: usize = words[5].parse().map_err(|_| ParseActionError)?;
             Ok(Action { quantity, from, to })
+        } else {
+            Err(ParseActionError)
         }
     }
 }
@@ -50,14 +50,14 @@ fn parse_input(input: &str) -> (Vec<String>, Vec<Action>) {
 
     for line in parts[1].split('\n') {
         if let Ok(action) = line.parse::<Action>() {
-            actions.push(action)
+            actions.push(action);
         };
     }
 
     (stacks, actions)
 }
 
-fn do_action(stacks: Vec<String>, action: Action, flip_moved: bool) -> Vec<String> {
+fn do_action(stacks: &[String], action: &Action, flip_moved: bool) -> Vec<String> {
     let moved: String = {
         let picked_up = stacks[action.from - 1][..action.quantity].chars();
         if flip_moved {
@@ -78,17 +78,18 @@ fn do_action(stacks: Vec<String>, action: Action, flip_moved: bool) -> Vec<Strin
                 stack.clone()
             }
         };
-        result.push(stack)
+        result.push(stack);
     }
 
     result
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<String> {
     let (mut stacks, actions) = parse_input(input);
 
     for action in actions {
-        stacks = do_action(stacks, action, true);
+        stacks = do_action(&    stacks, &action, true);
     }
 
     Some(
@@ -99,11 +100,12 @@ pub fn part_one(input: &str) -> Option<String> {
     )
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<String> {
     let (mut stacks, actions) = parse_input(input);
 
     for action in actions {
-        stacks = do_action(stacks, action, false);
+        stacks = do_action(&stacks, &action, false);
     }
 
     Some(
@@ -165,7 +167,7 @@ mod tests {
             from: 2,
             to: 1,
         };
-        assert_eq!(do_action(before, action, true), vec!["DNZ", "CM", "P"],);
+        assert_eq!(do_action(&before, &action, true), vec!["DNZ", "CM", "P"],);
     }
 
     #[test]
@@ -176,7 +178,7 @@ mod tests {
             from: 1,
             to: 3,
         };
-        assert_eq!(do_action(before, action, true), vec!["", "CM", "ZNDP"],);
+        assert_eq!(do_action(&before, &action, true), vec!["", "CM", "ZNDP"],);
     }
 
     #[test]

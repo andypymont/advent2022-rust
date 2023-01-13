@@ -16,7 +16,7 @@ struct Point {
 }
 
 impl Point {
-    fn neighbour_in_direction(&self, direction: &Direction) -> Self {
+    fn neighbour_in_direction(self, direction: &Direction) -> Self {
         Self {
             x: match direction {
                 Direction::Left => self.x - 1,
@@ -31,13 +31,13 @@ impl Point {
         }
     }
 
-    fn follow(&self, other: &Self) -> Self {
+    fn follow(self, other: Self) -> Self {
         let candidate = Self {
             x: self.x + (other.x - self.x).signum(),
             y: self.y + (other.y - self.y).signum(),
         };
         if candidate.x == other.x && candidate.y == other.y {
-            *self
+            self
         } else {
             candidate
         }
@@ -65,11 +65,11 @@ impl FromStr for Instruction {
         match parts[1].parse::<u32>() {
             Err(_) => Err(ParseInstructionError),
             Ok(steps) => {
-                let direction = match parts[0] {
-                    "U" => Ok(Direction::Up),
-                    "D" => Ok(Direction::Down),
-                    "L" => Ok(Direction::Left),
-                    "R" => Ok(Direction::Right),
+                let direction = match parts.first() {
+                    Some(&"U") => Ok(Direction::Up),
+                    Some(&"D") => Ok(Direction::Down),
+                    Some(&"L") => Ok(Direction::Left),
+                    Some(&"R") => Ok(Direction::Right),
                     _ => Err(ParseInstructionError),
                 }?;
                 Ok(Instruction { direction, steps })
@@ -100,7 +100,7 @@ impl Rope {
         knots.push(prev);
 
         for ix in 1..self.knots.len() {
-            let knot = self.knots[ix].follow(&prev);
+            let knot = self.knots[ix].follow(prev);
             knots.push(knot);
             prev = knot;
         }
@@ -132,10 +132,12 @@ fn tail_visits(input: &str, knots: usize) -> usize {
     visited.len()
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<usize> {
     Some(tail_visits(input, 2))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<usize> {
     Some(tail_visits(input, 10))
 }
@@ -153,7 +155,7 @@ mod tests {
     #[test]
     fn test_point_follow() {
         assert_eq!(
-            Point { x: 1, y: 1 }.follow(&Point { x: 1, y: 3 }),
+            Point { x: 1, y: 1 }.follow(Point { x: 1, y: 3 }),
             Point { x: 1, y: 2 }
         );
     }
@@ -161,7 +163,7 @@ mod tests {
     #[test]
     fn test_point_follow_but_dont_overlap() {
         assert_eq!(
-            Point { x: 1, y: 1 }.follow(&Point { x: 1, y: 2 }),
+            Point { x: 1, y: 1 }.follow(Point { x: 1, y: 2 }),
             Point { x: 1, y: 1 }
         );
     }

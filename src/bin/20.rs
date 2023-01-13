@@ -12,13 +12,13 @@ fn parse_input(input: &str) -> Result<Vec<i64>, ParseIntError> {
     Ok(parsed)
 }
 
-const DECRYPTION_KEY: i64 = 811589153;
+const DECRYPTION_KEY: i64 = 811_589_153;
 
-fn apply_key(list: Vec<i64>) -> Vec<i64> {
+fn apply_key(list: &[i64]) -> Vec<i64> {
     list.iter().map(|value| value * DECRYPTION_KEY).collect()
 }
 
-fn mix(list: Vec<i64>, rounds: usize) -> Vec<i64> {
+fn mix(list: &[i64], rounds: usize) -> Vec<i64> {
     let mut circle = VecDeque::new();
     circle.extend(list.iter().enumerate());
 
@@ -27,8 +27,8 @@ fn mix(list: Vec<i64>, rounds: usize) -> Vec<i64> {
             let pos = circle.iter().position(|i| i.0 == ix).unwrap_or(0);
             circle.rotate_left(pos);
             if let Some((ix, value)) = circle.pop_front() {
-                let dist = value.rem_euclid(circle.len() as i64) as usize;
-                circle.rotate_left(dist);
+                let distance = value.rem_euclid(circle.len() as i64) as usize;
+                circle.rotate_left(distance);
                 circle.push_back((ix, value));
             }
         }
@@ -37,7 +37,7 @@ fn mix(list: Vec<i64>, rounds: usize) -> Vec<i64> {
     circle.iter().map(|(_i, v)| **v).collect()
 }
 
-fn grove_coordinates(list: Vec<i64>) -> i64 {
+fn grove_coordinates(list: &[i64]) -> i64 {
     let zero = list.iter().position(|value| *value == 0).unwrap_or(0);
     [1000, 2000, 3000]
         .iter()
@@ -45,17 +45,19 @@ fn grove_coordinates(list: Vec<i64>) -> i64 {
         .sum()
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<i64> {
     match parse_input(input) {
         Err(_) => None,
-        Ok(list) => Some(grove_coordinates(mix(list, 1))),
+        Ok(list) => Some(grove_coordinates(&mix(&list, 1))),
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<i64> {
     match parse_input(input) {
         Err(_) => None,
-        Ok(list) => Some(grove_coordinates(mix(apply_key(list), 10))),
+        Ok(list) => Some(grove_coordinates(&mix(&apply_key(&list), 10))),
     }
 }
 
@@ -78,20 +80,20 @@ mod tests {
     #[test]
     fn test_mix() {
         let list = vec![1, 2, -3, 3, -2, 0, 4];
-        assert_eq!(mix(list, 1), vec![0, 3, -2, 1, 2, -3, 4]);
+        assert_eq!(mix(&list, 1), vec![0, 3, -2, 1, 2, -3, 4]);
     }
 
     #[test]
     fn test_grove_coordinates() {
         let list = vec![3, -2, 1, 2, -3, 4, 0];
-        assert_eq!(grove_coordinates(list), 3);
+        assert_eq!(grove_coordinates(&list), 3);
     }
 
     #[test]
     fn test_apply_key() {
         let list = vec![1, 2, -3, 3, -2, 0, 4];
         assert_eq!(
-            apply_key(list),
+            apply_key(&list),
             vec![
                 811589153,
                 1623178306,

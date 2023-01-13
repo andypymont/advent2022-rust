@@ -18,10 +18,12 @@ fn marker_location(input: &str, distinct_chars: usize) -> Option<u32> {
     None
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     marker_location(input, 4)
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     marker_location(input, 14)
 }

@@ -89,10 +89,10 @@ impl FromStr for Grid {
         for line in s.lines() {
             width = match width {
                 Ok(current) => {
-                    if line.len() != current {
-                        Err(ParseGridError)
-                    } else {
+                    if line.len() == current {
                         Ok(current)
+                    } else {
+                        Err(ParseGridError)
                     }
                 }
                 Err(_) => Ok(line.len()),
@@ -124,6 +124,7 @@ impl FromStr for Grid {
     }
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     if let Ok(grid) = input.parse::<Grid>() {
         grid.shortest_path(&ShortestPathType::EndToEnd)
@@ -132,6 +133,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     if let Ok(grid) = input.parse::<Grid>() {
         grid.shortest_path(&ShortestPathType::Hiking)

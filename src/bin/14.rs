@@ -13,13 +13,14 @@ impl FromStr for Point {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split(',').collect();
-        if parts.len() != 2 {
-            Err(ParsePointError)
-        } else {
+        if parts.len() == 2 {
             Ok(Point(
                 parts[0].parse().map_err(|_| ParsePointError)?,
                 parts[1].parse().map_err(|_| ParsePointError)?,
             ))
+        } else {
+            Err(ParsePointError)
+
         }
     }
 }
@@ -98,7 +99,7 @@ const DOWN_RIGHT: Point = Point(1, 1);
 fn apply_gravity(sand: Point, occupied: &HashSet<Point>, floor: Floor) -> Option<Point> {
     for direction in [DOWN, DOWN_LEFT, DOWN_RIGHT] {
         let consider = sand + direction;
-        if !occupied.contains(&consider) && !floor.blocks(&consider) {
+        if !occupied.contains(&consider) && !floor.blocks(consider) {
             return Some(consider);
         }
     }
@@ -118,7 +119,7 @@ struct Floor {
 }
 
 impl Floor {
-    fn blocks(&self, pt: &Point) -> bool {
+    fn blocks(self, pt: Point) -> bool {
         match self.floor_type {
             FloorType::EndlessVoid => false,
             FloorType::InfinitePlane => pt.1 >= self.y,
@@ -136,28 +137,27 @@ fn resting_sand_quantity(input: &str, floor_type: FloorType) -> u32 {
 
     let mut sand = Point(500, 0);
     while sand.1 < floor.y {
-        match apply_gravity(sand, &occupied, floor) {
-            Some(point) => {
-                sand = point;
+        if let Some(point) = apply_gravity(sand, &occupied, floor) {
+            sand = point;
+        } else {
+            occupied.insert(sand);
+            resting_sand += 1;
+            if sand == Point(500, 0) {
+                break;
             }
-            None => {
-                occupied.insert(sand);
-                resting_sand += 1;
-                if sand == Point(500, 0) {
-                    break;
-                }
-                sand = Point(500, 0);
-            }
+            sand = Point(500, 0);
         }
     }
 
     resting_sand
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     Some(resting_sand_quantity(input, FloorType::EndlessVoid))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     Some(resting_sand_quantity(input, FloorType::InfinitePlane))
 }

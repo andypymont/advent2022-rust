@@ -1,3 +1,4 @@
+#[must_use]
 pub fn read_totals_from_input(input: &str) -> Vec<u32> {
     let mut elves: Vec<u32> = Vec::new();
 
@@ -13,19 +14,22 @@ pub fn read_totals_from_input(input: &str) -> Vec<u32> {
     elves
 }
 
+#[must_use]
 pub fn max_total_calories(calories_by_elf: &[u32], quantity: usize) -> Vec<u32> {
     let mut totals = calories_by_elf.to_vec();
-    totals.sort();
+    totals.sort_unstable();
     totals.reverse();
     totals.truncate(quantity);
     totals
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     let totals = read_totals_from_input(input);
     Some(max_total_calories(&totals, 1).iter().sum())
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let totals = read_totals_from_input(input);
     Some(max_total_calories(&totals, 3).iter().sum())

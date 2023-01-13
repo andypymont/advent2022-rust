@@ -96,6 +96,7 @@ fn trees_in_forest(forest: &HashMap<Point, u32>) -> HashSet<TreeInfo> {
     trees
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     let forest = read_forest(input);
     let trees = trees_in_forest(&forest);
@@ -103,6 +104,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(trees.iter().map(|tree| u32::from(tree.visible)).sum())
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let forest = read_forest(input);
     let trees = trees_in_forest(&forest);

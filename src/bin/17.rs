@@ -223,7 +223,7 @@ impl TetrisGame {
                 let add_cycles = (shapes - cycle.second_seen) / cycle_length;
                 extra_height += add_cycles as u64 * cycle.height_change;
                 self.shape_ix += add_cycles * cycle_length;
-                self.cycle = TetrisCycle::Removed
+                self.cycle = TetrisCycle::Removed;
             }
         }
 
@@ -231,11 +231,13 @@ impl TetrisGame {
     }
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u64> {
     let mut game = TetrisGame::new(input);
     Some(game.height_after_rocks(2022))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u64> {
     let mut game = TetrisGame::new(input);
     Some(game.height_after_rocks(1_000_000_000_000))

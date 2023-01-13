@@ -6,9 +6,9 @@ struct FileSystem {
     files: HashMap<String, u32>,
 }
 
-const MAX_SMALL_FOLDER_SIZE: u32 = 100000;
-const FILE_SYSTEM_SIZE: u32 = 70000000;
-const SPACE_NEEDED: u32 = 30000000;
+const MAX_SMALL_FOLDER_SIZE: u32 = 100_000;
+const FILE_SYSTEM_SIZE: u32 = 70_000_000;
+const SPACE_NEEDED: u32 = 30_000_000;
 
 impl FileSystem {
     fn new() -> FileSystem {
@@ -97,10 +97,12 @@ fn read_file_system(input: &str) -> FileSystem {
     fs
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     Some(read_file_system(input).total_size_of_small_directories())
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     read_file_system(input).smallest_deletion_candidate_size()
 }

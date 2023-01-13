@@ -31,11 +31,11 @@ impl FromStr for Point {
 }
 
 impl Point {
-    fn manhattan_distance(&self, other: &Point) -> i32 {
+    fn manhattan_distance(self, other: Point) -> i32 {
         (self.0 - other.0).abs() + (self.1 - other.1).abs()
     }
 
-    fn within_bounds(&self, min_coord: i32, max_coord: i32) -> bool {
+    fn within_bounds(self, min_coord: i32, max_coord: i32) -> bool {
         self.0 >= min_coord && self.0 <= max_coord && self.1 >= min_coord && self.1 <= max_coord
     }
 }
@@ -64,7 +64,7 @@ impl FromStr for Sensor {
             Ok(Sensor {
                 location,
                 closest_beacon,
-                beacon_distance: location.manhattan_distance(&closest_beacon),
+                beacon_distance: location.manhattan_distance(closest_beacon),
             })
         } else {
             Err(ParsePointError)
@@ -166,7 +166,7 @@ fn non_beacon_positions(sensors: &[Sensor], row: i32) -> i32 {
 
         // skip any empty space between the previous x position and this range
         if range.0 > x {
-            x = range.0
+            x = range.0;
         }
 
         // add values from the current position up until the end of the range, then move to the end
@@ -198,7 +198,7 @@ fn beacon_position(sensors: &[Sensor], min_coord: i32, max_coord: i32) -> Option
             .filter(|pos| pos.within_bounds(min_coord, max_coord))
         {
             if !sensors.iter().any(|sensor| {
-                sensor.location.manhattan_distance(&position) <= sensor.beacon_distance
+                sensor.location.manhattan_distance(position) <= sensor.beacon_distance
             }) {
                 return Some(position);
             }
@@ -208,17 +208,19 @@ fn beacon_position(sensors: &[Sensor], min_coord: i32, max_coord: i32) -> Option
     None
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<i32> {
     Some(non_beacon_positions(&parse_sensors(input), 2_000_000))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<i64> {
     let result = beacon_position(&parse_sensors(input), 0, 4_000_000);
     match result {
         None => None,
         Some(beacon) => {
-            let x = (beacon.0 as i64) * 4_000_000;
-            let y = beacon.1 as i64;
+            let x = i64::from(beacon.0) * 4_000_000;
+            let y = i64::from(beacon.1);
             Some(x + y)
         }
     }

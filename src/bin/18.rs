@@ -43,13 +43,13 @@ impl FromStr for Cube {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split(',').collect();
-        if parts.len() != 3 {
-            Err(ParseCubeError)
-        } else {
+        if parts.len() == 3 {
             let x = parts[0].parse().map_err(|_| ParseCubeError)?;
             let y = parts[1].parse().map_err(|_| ParseCubeError)?;
             let z = parts[2].parse().map_err(|_| ParseCubeError)?;
             Ok(Cube(x, y, z))
+        } else {
+            Err(ParseCubeError)
         }
     }
 }
@@ -102,6 +102,7 @@ fn external_surface_area(cubes: &HashSet<Cube>) -> u32 {
     area
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     let mut cubes = HashSet::new();
     for line in input.lines() {
@@ -113,6 +114,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(surface_area(&cubes))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let mut cubes = HashSet::new();
     for line in input.lines() {

@@ -13,6 +13,7 @@ fn part_one_score(game: &str) -> u32 {
     }
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     let total = input.lines().map(part_one_score).sum();
     Some(total)
@@ -33,6 +34,7 @@ fn part_two_score(game: &str) -> u32 {
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let total = input.lines().map(part_two_score).sum();
     Some(total)

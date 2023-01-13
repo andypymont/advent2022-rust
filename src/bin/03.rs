@@ -32,9 +32,9 @@ fn backpack_priority(backpack: &str) -> u32 {
 }
 
 fn group_badge_priority(first: &str, second: &str, third: &str) -> u32 {
-    let first_set: HashSet<char> = HashSet::from_iter(first.chars());
-    let second_set: HashSet<char> = HashSet::from_iter(second.chars());
-    let third_set: HashSet<char> = HashSet::from_iter(third.chars());
+    let first_set = first.chars().collect::<HashSet<char>>();
+    let second_set = second.chars().collect::<HashSet<char>>();
+    let third_set = third.chars().collect::<HashSet<char>>();
     priority(
         first_set
             .intersection(&second_set)
@@ -42,11 +42,13 @@ fn group_badge_priority(first: &str, second: &str, third: &str) -> u32 {
     )
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     let total: u32 = input.lines().map(backpack_priority).sum();
     Some(total)
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     let mut total = 0;
     let mut backpacks = input.lines().peekable();

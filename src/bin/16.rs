@@ -69,7 +69,7 @@ impl ValveSystem {
             results
                 .entry(state.open_valves)
                 .and_modify(|current_best: &mut i32| {
-                    *current_best = state.pressure.max(*current_best)
+                    *current_best = state.pressure.max(*current_best);
                 })
                 .or_insert(state.pressure);
 
@@ -148,10 +148,9 @@ impl FromStr for ValveSystem {
                 .extend(valve.tunnels);
             if number == -1 {
                 continue;
-            } else {
-                names.insert(valve.name.to_string(), number);
-                flow_rates.insert(valve.name.to_string(), valve.flow_rate);
             }
+            names.insert(valve.name.to_string(), number);
+            flow_rates.insert(valve.name.to_string(), valve.flow_rate);
         }
 
         let mut graph: HashMap<i32, HashMap<i32, i32>> = HashMap::new();
@@ -179,7 +178,7 @@ impl FromStr for ValveSystem {
 
                 for adjacent in connections.entry(location.to_string()).or_default().iter() {
                     if !visited.contains(adjacent) {
-                        consider.push_back((adjacent.to_string(), steps + 1))
+                        consider.push_back((adjacent.to_string(), steps + 1));
                     }
                 }
             }
@@ -194,11 +193,13 @@ impl FromStr for ValveSystem {
     }
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<i32> {
     let system: ValveSystem = input.parse().unwrap_or_default();
     system.best_pressure_possible(30, 1)
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<i32> {
     let system: ValveSystem = input.parse().unwrap_or_default();
     system.best_pressure_possible(26, 2)

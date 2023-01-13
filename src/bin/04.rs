@@ -14,12 +14,12 @@ impl FromStr for Range {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('-').collect();
-        if parts.len() != 2 {
-            Err(ParseRangeError)
-        } else {
+        if parts.len() == 2 {
             let start: u32 = parts[0].parse().map_err(|_| ParseRangeError)?;
             let finish: u32 = parts[1].parse().map_err(|_| ParseRangeError)?;
             Ok(Range { start, finish })
+        } else {
+            Err(ParseRangeError)            
         }
     }
 }
@@ -46,12 +46,12 @@ impl FromStr for Pair {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let ranges: Vec<&str> = s.split(',').collect();
-        if ranges.len() != 2 {
-            Err(ParseRangeError)
-        } else {
+        if ranges.len() == 2 {
             let first: Range = ranges[0].parse()?;
             let second: Range = ranges[1].parse()?;
-            Ok(Pair { first, second })
+            Ok(Pair { first, second })            
+        } else {
+            Err(ParseRangeError)
         }
     }
 }
@@ -80,6 +80,7 @@ fn read_pairs(input: &str) -> Result<Vec<Pair>, ParseRangeError> {
     Ok(pairs)
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     match read_pairs(input) {
         Err(_) => None,
@@ -92,6 +93,7 @@ pub fn part_one(input: &str) -> Option<u32> {
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
     match read_pairs(input) {
         Err(_) => None,

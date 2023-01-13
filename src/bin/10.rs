@@ -59,7 +59,7 @@ fn run_program(program: Vec<Instruction>) -> Vec<i32> {
     values
 }
 
-fn signal_strength(program_results: Vec<i32>) -> i32 {
+fn signal_strength(program_results: &[i32]) -> i32 {
     (20..=220)
         .step_by(40)
         .map(|cycle| {
@@ -69,7 +69,7 @@ fn signal_strength(program_results: Vec<i32>) -> i32 {
         .sum()
 }
 
-fn crt_image(program_results: Vec<i32>) -> String {
+fn crt_image(program_results: &[i32]) -> String {
     let mut image = String::new();
     let mut line = String::new();
 
@@ -90,17 +90,19 @@ fn crt_image(program_results: Vec<i32>) -> String {
     image
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<i32> {
     match read_program(input) {
         Err(_) => None,
-        Ok(program) => Some(signal_strength(run_program(program))),
+        Ok(program) => Some(signal_strength(&run_program(program))),
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<String> {
     match read_program(input) {
         Err(_) => None,
-        Ok(program) => Some(crt_image(run_program(program))),
+        Ok(program) => Some(crt_image(&run_program(program))),
     }
 }
 
