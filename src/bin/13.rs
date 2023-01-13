@@ -143,7 +143,7 @@ pub fn part_one(input: &str) -> Option<u32> {
             .enumerate()
             .map(|(ix, pair)| {
                 if pair.is_correctly_ordered() {
-                    (ix + 1) as u32
+                    u32::try_from(ix + 1).unwrap_or(0)
                 } else {
                     0
                 }

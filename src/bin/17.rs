@@ -132,7 +132,7 @@ impl TetrisGame {
             shapes,
             shape_ix: 0,
             occupied: HashSet::new(),
-            max_y_values: repeat(0).take((MAX_X + 1) as usize).collect(),
+            max_y_values: repeat(0).take(usize::try_from(MAX_X + 1).unwrap_or(0)).collect(),
             visited: HashMap::new(),
             cycle: TetrisCycle::None,
         }
@@ -150,7 +150,7 @@ impl TetrisGame {
 
     fn next_shape(&mut self) {
         for pt in &self.current_shape {
-            let x = pt.0 as usize;
+            let x = usize::try_from(pt.0).unwrap_or(0);
             self.max_y_values[x] = self.max_y_values[x].max(pt.1);
             self.occupied.insert(*pt);
         }

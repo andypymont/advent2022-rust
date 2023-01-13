@@ -11,7 +11,7 @@ fn marker_location(input: &str, distinct_chars: usize) -> Option<u32> {
             last_seen.retain(|_, old_pos| *old_pos >= purge_earlier_than);
         }
         if last_seen.len() == distinct_chars {
-            return Some((pos + 1) as u32);
+            return Some(u32::try_from(pos + 1).unwrap_or(0));
         }
     }
 

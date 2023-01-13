@@ -185,7 +185,7 @@ fn non_beacon_positions(sensors: &[Sensor], row: i32) -> i32 {
                 }
             })
             .collect();
-        positions.len() as i32
+        i32::try_from(positions.len()).unwrap_or(0)
     };
 
     count - beacons_in_row

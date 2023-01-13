@@ -74,8 +74,8 @@ fn read_forest(input: &str) -> HashMap<Point, u32> {
     for (y, line) in input.lines().enumerate() {
         for (x, ch) in line.chars().enumerate() {
             let pt = Point {
-                x: x as i32,
-                y: y as i32,
+                x: i32::try_from(x).unwrap_or(0),
+                y: i32::try_from(y).unwrap_or(0),
             };
             let height = ch.to_digit(10).unwrap_or(0);
             forest.insert(pt, height);

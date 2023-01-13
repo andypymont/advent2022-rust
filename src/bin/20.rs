@@ -27,7 +27,8 @@ fn mix(list: &[i64], rounds: usize) -> Vec<i64> {
             let pos = circle.iter().position(|i| i.0 == ix).unwrap_or(0);
             circle.rotate_left(pos);
             if let Some((ix, value)) = circle.pop_front() {
-                let distance = value.rem_euclid(circle.len() as i64) as usize;
+                let length = i64::try_from(circle.len()).unwrap_or(0);
+                let distance = usize::try_from(value.rem_euclid(length)).unwrap_or(0);
                 circle.rotate_left(distance);
                 circle.push_back((ix, value));
             }

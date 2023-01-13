@@ -64,7 +64,7 @@ fn signal_strength(program_results: &[i32]) -> i32 {
         .step_by(40)
         .map(|cycle| {
             let register_value = program_results[cycle - 1];
-            register_value * (cycle as i32)
+            register_value * i32::try_from(cycle).unwrap_or(0)
         })
         .sum()
 }
@@ -74,7 +74,7 @@ fn crt_image(program_results: &[i32]) -> String {
     let mut line = String::new();
 
     for (ix, x) in program_results.iter().enumerate() {
-        let pixel = (ix % 40) as i32;
+        let pixel = i32::try_from(ix % 40).unwrap_or(0);
         line.push(if *x - 1 == pixel || *x == pixel || *x + 1 == pixel {
             '#'
         } else {
