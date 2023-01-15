@@ -19,7 +19,7 @@ impl FromStr for Range {
             let finish: u32 = parts[1].parse().map_err(|_| ParseRangeError)?;
             Ok(Range { start, finish })
         } else {
-            Err(ParseRangeError)            
+            Err(ParseRangeError)
         }
     }
 }
@@ -49,7 +49,7 @@ impl FromStr for Pair {
         if ranges.len() == 2 {
             let first: Range = ranges[0].parse()?;
             let second: Range = ranges[1].parse()?;
-            Ok(Pair { first, second })            
+            Ok(Pair { first, second })
         } else {
             Err(ParseRangeError)
         }

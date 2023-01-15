@@ -54,11 +54,13 @@ fn create_file(path: &str) -> Result<File, std::io::Error> {
 }
 
 fn main() {
-    let day = if let Ok(day) = parse_args() { day } else {
+    let day = if let Ok(day) = parse_args() {
+        day
+    } else {
         eprintln!("Need to specify a day (as integer). example: `cargo scaffold 7`");
         process::exit(1);
     };
- 
+
     let day_padded = format!("{day:02}");
 
     let input_path = format!("src/inputs/{day_padded}.txt");

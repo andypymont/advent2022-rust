@@ -132,7 +132,9 @@ impl TetrisGame {
             shapes,
             shape_ix: 0,
             occupied: HashSet::new(),
-            max_y_values: repeat(0).take(usize::try_from(MAX_X + 1).unwrap_or(0)).collect(),
+            max_y_values: repeat(0)
+                .take(usize::try_from(MAX_X + 1).unwrap_or(0))
+                .collect(),
             visited: HashMap::new(),
             cycle: TetrisCycle::None,
         }

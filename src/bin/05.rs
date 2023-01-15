@@ -89,7 +89,7 @@ pub fn part_one(input: &str) -> Option<String> {
     let (mut stacks, actions) = parse_input(input);
 
     for action in actions {
-        stacks = do_action(&    stacks, &action, true);
+        stacks = do_action(&stacks, &action, true);
     }
 
     Some(

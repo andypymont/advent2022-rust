@@ -213,7 +213,8 @@ impl State {
                 if self.ore_robots == 0 {
                     continue;
                 }
-                minutes_until_start = minutes_until_start.max(div_ceil(ore_needed, self.ore_robots));
+                minutes_until_start =
+                    minutes_until_start.max(div_ceil(ore_needed, self.ore_robots));
             }
 
             let clay_needed = cost.1.saturating_sub(self.clay);
@@ -221,7 +222,8 @@ impl State {
                 if self.clay_robots == 0 {
                     continue;
                 }
-                minutes_until_start = minutes_until_start.max(div_ceil(clay_needed, self.clay_robots));
+                minutes_until_start =
+                    minutes_until_start.max(div_ceil(clay_needed, self.clay_robots));
             }
 
             let obsidian_needed = cost.2.saturating_sub(self.obsidian);
@@ -229,7 +231,8 @@ impl State {
                 if self.obsidian_robots == 0 {
                     continue;
                 }
-                minutes_until_start = minutes_until_start.max(div_ceil(obsidian_needed, self.obsidian_robots));
+                minutes_until_start =
+                    minutes_until_start.max(div_ceil(obsidian_needed, self.obsidian_robots));
             }
 
             let time = self.time.saturating_sub(1 + minutes_until_start);

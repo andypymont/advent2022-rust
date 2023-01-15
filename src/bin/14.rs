@@ -20,7 +20,6 @@ impl FromStr for Point {
             ))
         } else {
             Err(ParsePointError)
-
         }
     }
 }
