@@ -102,11 +102,13 @@ fn parse_monkeys(input: &str) -> HashMap<String, Monkey> {
     monkeys
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<i64> {
     let monkeys = parse_monkeys(input);
     monkeys.get("root").map(|monkey| monkey.value(&monkeys))
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<i64> {
     let mut monkeys = parse_monkeys(input);
 
