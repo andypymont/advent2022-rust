@@ -499,9 +499,9 @@ fn main() {
 mod tests {
     use super::*;
 
-    fn example_grove_map() -> GroveMap {
+    fn example_grove_map(part_two: bool) -> GroveMap {
         let connections = {
-            let zero_top = Edge {
+            let zero_up = Edge {
                 square: 0,
                 direction: Direction::Up,
             };
@@ -509,7 +509,7 @@ mod tests {
                 square: 0,
                 direction: Direction::Right,
             };
-            let zero_bottom = Edge {
+            let zero_down = Edge {
                 square: 0,
                 direction: Direction::Down,
             };
@@ -518,7 +518,7 @@ mod tests {
                 direction: Direction::Left,
             };
 
-            let one_top = Edge {
+            let one_up = Edge {
                 square: 1,
                 direction: Direction::Up,
             };
@@ -526,7 +526,7 @@ mod tests {
                 square: 1,
                 direction: Direction::Right,
             };
-            let one_bottom = Edge {
+            let one_down = Edge {
                 square: 1,
                 direction: Direction::Down,
             };
@@ -535,7 +535,7 @@ mod tests {
                 direction: Direction::Left,
             };
 
-            let two_top = Edge {
+            let two_up = Edge {
                 square: 2,
                 direction: Direction::Up,
             };
@@ -543,7 +543,7 @@ mod tests {
                 square: 2,
                 direction: Direction::Right,
             };
-            let two_bottom = Edge {
+            let two_down = Edge {
                 square: 2,
                 direction: Direction::Down,
             };
@@ -552,7 +552,7 @@ mod tests {
                 direction: Direction::Left,
             };
 
-            let three_top = Edge {
+            let three_up = Edge {
                 square: 3,
                 direction: Direction::Up,
             };
@@ -560,7 +560,7 @@ mod tests {
                 square: 3,
                 direction: Direction::Right,
             };
-            let three_bottom = Edge {
+            let three_down = Edge {
                 square: 3,
                 direction: Direction::Down,
             };
@@ -569,7 +569,7 @@ mod tests {
                 direction: Direction::Left,
             };
 
-            let four_top = Edge {
+            let four_up = Edge {
                 square: 4,
                 direction: Direction::Up,
             };
@@ -577,7 +577,7 @@ mod tests {
                 square: 4,
                 direction: Direction::Right,
             };
-            let four_bottom = Edge {
+            let four_down = Edge {
                 square: 4,
                 direction: Direction::Down,
             };
@@ -586,7 +586,7 @@ mod tests {
                 direction: Direction::Left,
             };
 
-            let five_top = Edge {
+            let five_up = Edge {
                 square: 5,
                 direction: Direction::Up,
             };
@@ -594,7 +594,7 @@ mod tests {
                 square: 5,
                 direction: Direction::Right,
             };
-            let five_bottom = Edge {
+            let five_down = Edge {
                 square: 5,
                 direction: Direction::Down,
             };
@@ -605,35 +605,67 @@ mod tests {
 
             let mut connections = HashMap::new();
 
-            connections.insert(zero_top, four_bottom);
-            connections.insert(zero_right, zero_left);
-            connections.insert(zero_bottom, three_top);
-            connections.insert(zero_left, zero_right);
+            if part_two {
+                connections.insert(zero_up, one_up);
+                connections.insert(zero_right, five_right);
+                connections.insert(zero_down, three_up);
+                connections.insert(zero_left, two_up);
 
-            connections.insert(one_top, one_bottom);
-            connections.insert(one_right, two_left);
-            connections.insert(one_bottom, one_top);
-            connections.insert(one_left, three_right);
+                connections.insert(one_up, zero_up);
+                connections.insert(one_right, two_left);
+                connections.insert(one_down, four_down);
+                connections.insert(one_left, five_down);
 
-            connections.insert(two_top, two_bottom);
-            connections.insert(two_right, three_left);
-            connections.insert(two_bottom, two_top);
-            connections.insert(two_left, one_right);
+                connections.insert(two_up, zero_left);
+                connections.insert(two_right, three_left);
+                connections.insert(two_down, four_left);
+                connections.insert(two_left, one_right);
 
-            connections.insert(three_top, zero_bottom);
-            connections.insert(three_right, one_left);
-            connections.insert(three_bottom, four_top);
-            connections.insert(three_left, two_right);
+                connections.insert(three_up, zero_down);
+                connections.insert(three_right, five_up);
+                connections.insert(three_down, four_up);
+                connections.insert(three_left, two_right);
 
-            connections.insert(four_top, three_bottom);
-            connections.insert(four_right, five_left);
-            connections.insert(four_bottom, zero_top);
-            connections.insert(four_left, five_right);
+                connections.insert(four_up, three_down);
+                connections.insert(four_right, five_left);
+                connections.insert(four_down, one_down);
+                connections.insert(four_left, two_down);
 
-            connections.insert(five_top, five_bottom);
-            connections.insert(five_right, four_left);
-            connections.insert(five_bottom, five_top);
-            connections.insert(five_left, four_right);
+                connections.insert(five_up, three_right);
+                connections.insert(five_right, zero_right);
+                connections.insert(five_down, one_left);
+                connections.insert(five_left, four_right);
+            } else {
+                connections.insert(zero_up, four_down);
+                connections.insert(zero_right, zero_left);
+                connections.insert(zero_down, three_up);
+                connections.insert(zero_left, zero_right);
+
+                connections.insert(one_up, one_down);
+                connections.insert(one_right, two_left);
+                connections.insert(one_down, one_up);
+                connections.insert(one_left, three_right);
+
+                connections.insert(two_up, two_down);
+                connections.insert(two_right, three_left);
+                connections.insert(two_down, two_up);
+                connections.insert(two_left, one_right);
+
+                connections.insert(three_up, zero_down);
+                connections.insert(three_right, one_left);
+                connections.insert(three_down, four_up);
+                connections.insert(three_left, two_right);
+
+                connections.insert(four_up, three_down);
+                connections.insert(four_right, five_left);
+                connections.insert(four_down, zero_up);
+                connections.insert(four_left, five_right);
+
+                connections.insert(five_up, five_down);
+                connections.insert(five_right, four_left);
+                connections.insert(five_down, five_up);
+                connections.insert(five_left, four_right);
+            }
 
             connections
         };
@@ -701,10 +733,10 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_input() {
+    fn test_parse_input_part_one() {
         let input = advent_of_code::read_file("examples", 22);
         let expected = Ok((
-            example_grove_map(),
+            example_grove_map(false),
             vec![
                 Instruction::Forward(10),
                 Instruction::TurnRight,
@@ -726,7 +758,7 @@ mod tests {
 
     #[test]
     fn test_wrap_around() {
-        let map = example_grove_map();
+        let map = example_grove_map(false);
         let cube_pos = CubePosition {
             square: 0,
             position: Position(0, 0),
@@ -749,8 +781,32 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_input_part_two() {
+        let input = advent_of_code::read_file("examples", 22);
+        let expected = Ok((
+            example_grove_map(true),
+            vec![
+                Instruction::Forward(10),
+                Instruction::TurnRight,
+                Instruction::Forward(5),
+                Instruction::TurnLeft,
+                Instruction::Forward(5),
+                Instruction::TurnRight,
+                Instruction::Forward(10),
+                Instruction::TurnLeft,
+                Instruction::Forward(4),
+                Instruction::TurnRight,
+                Instruction::Forward(5),
+                Instruction::TurnLeft,
+                Instruction::Forward(5),
+            ],
+        ));
+        assert_eq!(parse_input(&input), expected);
+    }
+
+    #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 22);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(5031));
     }
 }
