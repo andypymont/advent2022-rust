@@ -1,6 +1,5 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::Add;
-use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 struct ParseInputError;
@@ -212,30 +211,31 @@ impl CubePosition {
     }
 
     fn traverse_edge(&self, map: &GroveMap) -> Self {
+        let max_dimension = map.square_size - 1;
+
         let pos = match self.facing {
             Direction::Up => self.position.0,
             Direction::Right => self.position.1,
-            Direction::Down => map.square_size - self.position.0,
-            Direction::Left => map.square_size - self.position.1,
+            Direction::Down => max_dimension - self.position.0,
+            Direction::Left => max_dimension - self.position.1,
         };
 
         if let Some(enter_edge) = map.connections.get(&self.to_edge()) {
-            let facing = enter_edge.direction.reverse();
-            let x = match facing {
-                Direction::Up => pos,
-                Direction::Down => map.square_size - pos,
-                Direction::Left => map.square_size - 1,
-                Direction::Right => 0,
+            let x = match enter_edge.direction {
+                Direction::Up => max_dimension - pos,
+                Direction::Right => max_dimension,
+                Direction::Down => pos,
+                Direction::Left => 0,
             };
-            let y = match facing {
-                Direction::Right => pos,
-                Direction::Left => map.square_size - pos,
-                Direction::Up => map.square_size - 1,
-                Direction::Down => 0,
+            let y = match enter_edge.direction {
+                Direction::Up => 0,
+                Direction::Right => max_dimension - pos,
+                Direction::Down => max_dimension,
+                Direction::Left => pos,
             };
             Self {
                 square: enter_edge.square,
-                facing,
+                facing: enter_edge.direction.reverse(),
                 position: Position(x, y),
             }
         } else {
@@ -255,6 +255,191 @@ impl CubePosition {
             Direction::Up => 3,
         };
         (1000 * row) + (4 * col) + facing
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct RotatedSquare {
+    square: usize,
+    rotation: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum CubeFace {
+    Top,
+    Left,
+    Front,
+    Right,
+    Back,
+    Bottom,
+}
+
+#[derive(Debug, PartialEq)]
+struct Cube {
+    top: Option<RotatedSquare>,
+    left: Option<RotatedSquare>,
+    front: Option<RotatedSquare>,
+    right: Option<RotatedSquare>,
+    back: Option<RotatedSquare>,
+    bottom: Option<RotatedSquare>,
+}
+
+impl Cube {
+    fn new() -> Self {
+        Self {
+            top: None,
+            left: None,
+            front: None,
+            right: None,
+            back: None,
+            bottom: None,
+        }
+    }
+
+    fn get_edge(&self, face: CubeFace, direction: Direction) -> Edge {
+        let rs = self.get_face(face).unwrap_or(RotatedSquare {
+            square: 0,
+            rotation: 0,
+        });
+        let direction = {
+            let mut dir = direction;
+            for _ in 0..rs.rotation {
+                dir = dir.turn_left();
+            }
+            dir
+        };
+
+        Edge {
+            direction,
+            square: rs.square,
+        }
+    }
+
+    fn get_face(&self, face: CubeFace) -> Option<RotatedSquare> {
+        match face {
+            CubeFace::Top => self.top,
+            CubeFace::Left => self.left,
+            CubeFace::Front => self.front,
+            CubeFace::Right => self.right,
+            CubeFace::Back => self.back,
+            CubeFace::Bottom => self.bottom,
+        }
+    }
+
+    fn set_face(&mut self, state: CubeFillState) {
+        let rs = Some(RotatedSquare {
+            rotation: state.rotation,
+            square: state.square,
+        });
+        match state.face {
+            CubeFace::Top => self.top = rs,
+            CubeFace::Left => self.left = rs,
+            CubeFace::Front => self.front = rs,
+            CubeFace::Right => self.right = rs,
+            CubeFace::Back => self.back = rs,
+            CubeFace::Bottom => self.bottom = rs,
+        }
+    }
+}
+
+const STANDARD_CUBE_CONNECTIONS: [((CubeFace, Direction), (CubeFace, Direction)); 12] = [
+    (
+        (CubeFace::Top, Direction::Up),
+        (CubeFace::Back, Direction::Up),
+    ),
+    (
+        (CubeFace::Top, Direction::Right),
+        (CubeFace::Right, Direction::Up),
+    ),
+    (
+        (CubeFace::Top, Direction::Down),
+        (CubeFace::Front, Direction::Up),
+    ),
+    (
+        (CubeFace::Top, Direction::Left),
+        (CubeFace::Left, Direction::Up),
+    ),
+    (
+        (CubeFace::Left, Direction::Right),
+        (CubeFace::Front, Direction::Left),
+    ),
+    (
+        (CubeFace::Left, Direction::Down),
+        (CubeFace::Bottom, Direction::Left),
+    ),
+    (
+        (CubeFace::Left, Direction::Left),
+        (CubeFace::Back, Direction::Right),
+    ),
+    (
+        (CubeFace::Front, Direction::Right),
+        (CubeFace::Right, Direction::Left),
+    ),
+    (
+        (CubeFace::Front, Direction::Down),
+        (CubeFace::Bottom, Direction::Up),
+    ),
+    (
+        (CubeFace::Right, Direction::Right),
+        (CubeFace::Back, Direction::Left),
+    ),
+    (
+        (CubeFace::Right, Direction::Down),
+        (CubeFace::Bottom, Direction::Right),
+    ),
+    (
+        (CubeFace::Back, Direction::Down),
+        (CubeFace::Bottom, Direction::Down),
+    ),
+];
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct CubeFillState {
+    square: usize,
+    face: CubeFace,
+    rotation: usize,
+}
+
+impl CubeFillState {
+    fn neighbour_in_direction(&self, mut direction: Direction) -> (CubeFace, usize) {
+        for _ in 0..self.rotation {
+            direction = direction.turn_right();
+        }
+        match (self.face, direction) {
+            (CubeFace::Top, Direction::Up) => (CubeFace::Back, 2),
+            (CubeFace::Top, Direction::Right) => (CubeFace::Right, 1),
+            (CubeFace::Top, Direction::Down) => (CubeFace::Front, 0),
+            (CubeFace::Top, Direction::Left) => (CubeFace::Left, 3),
+            (CubeFace::Left, Direction::Up) => (CubeFace::Top, 1),
+            (CubeFace::Left, Direction::Right) => (CubeFace::Front, 0),
+            (CubeFace::Left, Direction::Down) => (CubeFace::Bottom, 3),
+            (CubeFace::Left, Direction::Left) => (CubeFace::Back, 0),
+            (CubeFace::Front, Direction::Up) => (CubeFace::Top, 0),
+            (CubeFace::Front, Direction::Right) => (CubeFace::Right, 0),
+            (CubeFace::Front, Direction::Down) => (CubeFace::Bottom, 0),
+            (CubeFace::Front, Direction::Left) => (CubeFace::Left, 0),
+            (CubeFace::Right, Direction::Up) => (CubeFace::Top, 3),
+            (CubeFace::Right, Direction::Right) => (CubeFace::Back, 0),
+            (CubeFace::Right, Direction::Down) => (CubeFace::Bottom, 1),
+            (CubeFace::Right, Direction::Left) => (CubeFace::Front, 0),
+            (CubeFace::Back, Direction::Up) => (CubeFace::Top, 0),
+            (CubeFace::Back, Direction::Right) => (CubeFace::Left, 0),
+            (CubeFace::Back, Direction::Down) => (CubeFace::Bottom, 2),
+            (CubeFace::Back, Direction::Left) => (CubeFace::Right, 0),
+            (CubeFace::Bottom, Direction::Up) => (CubeFace::Front, 0),
+            (CubeFace::Bottom, Direction::Right) => (CubeFace::Right, 3),
+            (CubeFace::Bottom, Direction::Down) => (CubeFace::Back, 2),
+            (CubeFace::Bottom, Direction::Left) => (CubeFace::Left, 1),
+        }
+    }
+
+    fn move_to_neighbour(&self, direction: Direction, flat_neighbour: usize) -> Self {
+        let (face, extra_rotation) = self.neighbour_in_direction(direction);
+        Self {
+            square: flat_neighbour,
+            face,
+            rotation: (self.rotation + extra_rotation) % 4,
+        }
     }
 }
 
@@ -288,30 +473,36 @@ impl GroveLayout {
         self.layout.iter().rposition(|pos| pos.1 == y).unwrap_or(0)
     }
 
-    fn square_in_direction(&self, position: Position, direction: Direction) -> usize {
-        let default = match direction {
-            Direction::Up => self.last_square_in_column(position.0),
-            Direction::Right => self.first_square_in_row(position.1),
-            Direction::Down => self.first_square_in_column(position.0),
-            Direction::Left => self.last_square_in_row(position.1),
-        };
-
+    fn square_in_direction(&self, position: Position, direction: Direction) -> Option<usize> {
         if (direction == Direction::Up && position.1 == 0)
             || (direction == Direction::Left && position.0 == 0)
         {
-            default
-        } else if let Some(square) = self
-            .layout
-            .iter()
-            .position(|pos| pos == &(position + direction))
-        {
-            square
+            None
         } else {
-            default
+            self.layout
+                .iter()
+                .position(|pos| pos == &(position + direction))
         }
     }
 
-    fn get_connections(&self) -> HashMap<Edge, Edge> {
+    fn square_in_direction_or_wrap_around(
+        &self,
+        position: Position,
+        direction: Direction,
+    ) -> usize {
+        if let Some(square) = self.square_in_direction(position, direction) {
+            square
+        } else {
+            match direction {
+                Direction::Up => self.last_square_in_column(position.0),
+                Direction::Right => self.first_square_in_row(position.1),
+                Direction::Down => self.first_square_in_column(position.0),
+                Direction::Left => self.last_square_in_row(position.1),
+            }
+        }
+    }
+
+    fn get_flat_connections(&self) -> HashMap<Edge, Edge> {
         let mut connections = HashMap::new();
 
         for (number, position) in self.layout.iter().enumerate() {
@@ -320,13 +511,57 @@ impl GroveLayout {
                     square: number,
                     direction,
                 };
-                let other = self.square_in_direction(*position, direction);
+                let other = self.square_in_direction_or_wrap_around(*position, direction);
                 let other_edge = Edge {
                     square: other,
                     direction: direction.reverse(),
                 };
                 connections.insert(edge, other_edge);
             }
+        }
+
+        connections
+    }
+
+    fn assemble_cube(&self) -> Cube {
+        let mut cube = Cube::new();
+        let mut visited: HashSet<usize> = HashSet::new();
+        let mut consider = VecDeque::new();
+
+        consider.push_back(CubeFillState {
+            square: 0,
+            rotation: 0,
+            face: CubeFace::Front,
+        });
+
+        while let Some(state) = consider.pop_front() {
+            if visited.contains(&state.square) {
+                continue;
+            }
+            visited.insert(state.square);
+
+            cube.set_face(state);
+            if let Some(position) = self.layout.get(state.square) {
+                for direction in COMPASS {
+                    if let Some(flat_neighbour) = self.square_in_direction(*position, direction) {
+                        consider.push_back(state.move_to_neighbour(direction, flat_neighbour));
+                    }
+                }
+            }
+        }
+
+        cube
+    }
+
+    fn get_cube_connections(&self) -> HashMap<Edge, Edge> {
+        let cube = self.assemble_cube();
+        let mut connections = HashMap::new();
+
+        for ((face_a, dir_a), (face_b, dir_b)) in STANDARD_CUBE_CONNECTIONS {
+            let edge_a = cube.get_edge(face_a, dir_a);
+            let edge_b = cube.get_edge(face_b, dir_b);
+            connections.insert(edge_a, edge_b);
+            connections.insert(edge_b, edge_a);
         }
 
         connections
@@ -340,21 +575,20 @@ struct GroveMap {
     connections: HashMap<Edge, Edge>,
 }
 
-impl FromStr for GroveMap {
-    type Err = ParseInputError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (square_size, longest_line, tiles): (usize, usize, Vec<Vec<Tile>>) = s.lines().fold(
-            (usize::MAX, 0, Vec::new()),
-            |(square_size, longest_line, mut tiles), line| {
-                tiles.push(line.chars().map(Tile::from_char).collect());
-                (
-                    square_size.min(line.trim().len()),
-                    longest_line.max(line.len()),
-                    tiles,
-                )
-            },
-        );
+impl GroveMap {
+    fn from_input(input: &str, assemble_cube: bool) -> Self {
+        let (square_size, longest_line, tiles): (usize, usize, Vec<Vec<Tile>>) =
+            input.lines().fold(
+                (usize::MAX, 0, Vec::new()),
+                |(square_size, longest_line, mut tiles), line| {
+                    tiles.push(line.chars().map(Tile::from_char).collect());
+                    (
+                        square_size.min(line.trim().len()),
+                        longest_line.max(line.len()),
+                        tiles,
+                    )
+                },
+            );
 
         let mut squares = Vec::new();
         let mut layout = GroveLayout::new();
@@ -389,15 +623,19 @@ impl FromStr for GroveMap {
             }
         }
 
-        Ok(GroveMap {
+        let connections = if assemble_cube {
+            layout.get_cube_connections()
+        } else {
+            layout.get_flat_connections()
+        };
+
+        GroveMap {
             square_size,
             squares,
-            connections: layout.get_connections(),
-        })
+            connections,
+        }
     }
-}
 
-impl GroveMap {
     fn create_initial_position(&self) -> CubePosition {
         let position = {
             if let Some(square) = self.squares.first() {
@@ -458,10 +696,13 @@ impl GroveMap {
     }
 }
 
-fn parse_input(input: &str) -> Result<(GroveMap, Vec<Instruction>), ParseInputError> {
+fn parse_input(
+    input: &str,
+    assemble_cube: bool,
+) -> Result<(GroveMap, Vec<Instruction>), ParseInputError> {
     let parts: Vec<&str> = input.split("\n\n").collect();
     if parts.len() == 2 {
-        let map: GroveMap = parts[0].parse()?;
+        let map = GroveMap::from_input(parts[0], assemble_cube);
 
         let mut collector = InstructionCollector::new();
         for c in parts[1].chars() {
@@ -477,7 +718,7 @@ fn parse_input(input: &str) -> Result<(GroveMap, Vec<Instruction>), ParseInputEr
 
 #[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
-    if let Ok((map, instructions)) = parse_input(input) {
+    if let Ok((map, instructions)) = parse_input(input, false) {
         Some(map.follow_instructions(&instructions).password(&map))
     } else {
         None
@@ -485,8 +726,12 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 #[must_use]
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    if let Ok((map, instructions)) = parse_input(input, true) {
+        Some(map.follow_instructions(&instructions).password(&map))
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -753,7 +998,7 @@ mod tests {
                 Instruction::Forward(5),
             ],
         ));
-        assert_eq!(parse_input(&input), expected);
+        assert_eq!(parse_input(&input, false), expected);
     }
 
     #[test]
@@ -781,8 +1026,97 @@ mod tests {
     }
 
     #[test]
+    fn test_state_directions() {
+        let front = CubeFillState {
+            face: CubeFace::Front,
+            rotation: 0,
+            square: 0,
+        };
+        let down = CubeFillState {
+            face: CubeFace::Bottom,
+            rotation: 0,
+            square: 3,
+        };
+        let down_left = CubeFillState {
+            face: CubeFace::Left,
+            rotation: 1,
+            square: 2,
+        };
+        let down_left_left = CubeFillState {
+            face: CubeFace::Top,
+            rotation: 2,
+            square: 1,
+        };
+        let down_down = CubeFillState {
+            face: CubeFace::Back,
+            rotation: 2,
+            square: 4,
+        };
+        let down_down_right = CubeFillState {
+            face: CubeFace::Right,
+            rotation: 2,
+            square: 5,
+        };
+        assert_eq!(front.move_to_neighbour(Direction::Down, 3), down);
+        assert_eq!(down.move_to_neighbour(Direction::Left, 2), down_left);
+        assert_eq!(
+            down_left.move_to_neighbour(Direction::Left, 1),
+            down_left_left
+        );
+        assert_eq!(down.move_to_neighbour(Direction::Down, 4), down_down);
+        assert_eq!(
+            down_down.move_to_neighbour(Direction::Right, 5),
+            down_down_right
+        );
+    }
+
+    #[test]
+    fn test_assemble_cube() {
+        let layout = GroveLayout {
+            layout: vec![
+                Position(2, 0),
+                Position(0, 1),
+                Position(1, 1),
+                Position(2, 1),
+                Position(2, 2),
+                Position(3, 2),
+            ],
+        };
+        assert_eq!(
+            layout.assemble_cube(),
+            Cube {
+                top: Some(RotatedSquare {
+                    square: 1,
+                    rotation: 2
+                }),
+                left: Some(RotatedSquare {
+                    square: 2,
+                    rotation: 1
+                }),
+                front: Some(RotatedSquare {
+                    square: 0,
+                    rotation: 0
+                }),
+                right: Some(RotatedSquare {
+                    square: 5,
+                    rotation: 2
+                }),
+                back: Some(RotatedSquare {
+                    square: 4,
+                    rotation: 2
+                }),
+                bottom: Some(RotatedSquare {
+                    square: 3,
+                    rotation: 0
+                }),
+            }
+        );
+    }
+
+    #[test]
     fn test_parse_input_part_two() {
         let input = advent_of_code::read_file("examples", 22);
+
         let expected = Ok((
             example_grove_map(true),
             vec![
@@ -801,7 +1135,7 @@ mod tests {
                 Instruction::Forward(5),
             ],
         ));
-        assert_eq!(parse_input(&input), expected);
+        assert_eq!(parse_input(&input, true), expected);
     }
 
     #[test]
