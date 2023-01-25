@@ -5,15 +5,15 @@ use std::str::FromStr;
 struct Elf(i32, i32);
 
 impl Elf {
-    fn max(self, other: &Elf) -> Self {
+    fn max(self, other: Elf) -> Self {
         Self(self.0.max(other.0), self.1.max(other.1))
     }
 
-    fn min(self, other: &Elf) -> Self {
+    fn min(self, other: Elf) -> Self {
         Self(self.0.min(other.0), self.1.min(other.1))
     }
 
-    fn neighbours(&self) -> [Self; 8] {
+    fn neighbours(self) -> [Self; 8] {
         [
             Self(self.0 - 1, self.1 - 1),
             Self(self.0, self.1 - 1),
@@ -26,7 +26,7 @@ impl Elf {
         ]
     }
 
-    fn occupied_neighbours(&self, elves: &HashSet<Elf>) -> u8 {
+    fn occupied_neighbours(self, elves: &HashSet<Elf>) -> u8 {
         self.neighbours()
             .iter()
             .enumerate()
@@ -72,13 +72,13 @@ impl Direction {
         }
     }
 
-    fn move_elf(&self, elf: &Elf, occupied_neighbours: u8) -> Option<Elf> {
+    fn move_elf(&self, mover: Elf, occupied_neighbours: u8) -> Option<Elf> {
         if self.check_neighbours() & occupied_neighbours == 0 {
             Some(match self {
-                Direction::North => Elf(elf.0, elf.1 - 1),
-                Direction::South => Elf(elf.0, elf.1 + 1),
-                Direction::West => Elf(elf.0 - 1, elf.1),
-                Direction::East => Elf(elf.0 + 1, elf.1),
+                Direction::North => Elf(mover.0, mover.1 - 1),
+                Direction::South => Elf(mover.0, mover.1 + 1),
+                Direction::West => Elf(mover.0 - 1, mover.1),
+                Direction::East => Elf(mover.0 + 1, mover.1),
             })
         } else {
             None
@@ -93,6 +93,7 @@ struct ParseStateError;
 struct State {
     direction_cycle: usize,
     elves: HashSet<Elf>,
+    latest_step_moves: usize,
 }
 
 impl FromStr for State {
@@ -112,9 +113,12 @@ impl FromStr for State {
             }
         }
 
+        let len = elves.len();
+
         Ok(Self {
             direction_cycle: 0,
             elves,
+            latest_step_moves: len,
         })
     }
 }
@@ -134,7 +138,7 @@ impl State {
             .elves
             .iter()
             .fold((Elf(0, 0), Elf(0, 0)), |(top_left, bottom_right), elf| {
-                (top_left.min(elf), bottom_right.max(elf))
+                (top_left.min(*elf), bottom_right.max(*elf))
             });
 
         let height = u32::try_from(bottom_right.1 - top_left.1 + 1).unwrap_or(0);
@@ -153,40 +157,42 @@ impl State {
                 let occupied = elf.occupied_neighbours(&self.elves);
                 if occupied == 0 {
                     (*elf, *elf)
+                } else if let Some(dest) =
+                    checks.iter().find_map(|dir| dir.move_elf(*elf, occupied))
+                {
+                    counter.entry(dest).and_modify(|e| *e += 1).or_insert(1);
+                    (*elf, dest)
                 } else {
-                    if let Some(dest) = checks
-                        .iter()
-                        .filter_map(|dir| dir.move_elf(elf, occupied))
-                        .next()
-                    {
-                        counter.entry(dest).and_modify(|e| *e += 1).or_insert(1);
-                        (*elf, dest)
-                    } else {
-                        (*elf, *elf)
-                    }
+                    (*elf, *elf)
                 }
             })
             .collect();
+        let mut latest_step_moves = 0;
+        let elves = elf_proposals
+            .iter()
+            .map(|(elf, dest)| {
+                if counter.get(dest).unwrap_or(&0) == &1 {
+                    latest_step_moves += 1;
+                    *dest
+                } else {
+                    *elf
+                }
+            })
+            .collect();
+
         Self {
             direction_cycle: (self.direction_cycle + 1) % 4,
-            elves: elf_proposals
-                .iter()
-                .map(|(elf, dest)| {
-                    if counter.get(dest).unwrap_or(&1) > &1 {
-                        *elf
-                    } else {
-                        *dest
-                    }
-                })
-                .collect(),
+            elves,
+            latest_step_moves,
         }
     }
 }
 
+#[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
     if let Ok(mut state) = input.parse::<State>() {
         for _ in 0..10 {
-            state = state.next()
+            state = state.next();
         }
         Some(state.enclosed_empty_spaces())
     } else {
@@ -194,8 +200,18 @@ pub fn part_one(input: &str) -> Option<u32> {
     }
 }
 
+#[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    if let Ok(mut state) = input.parse::<State>() {
+        let mut rounds = 0;
+        while state.latest_step_moves != 0 {
+            state = state.next();
+            rounds += 1;
+        }
+        Some(rounds)
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -228,6 +244,7 @@ mod tests {
             Ok(State {
                 direction_cycle: 0,
                 elves: set![Elf(2, 1), Elf(3, 1), Elf(2, 2), Elf(2, 4), Elf(3, 4)],
+                latest_step_moves: 5,
             })
         );
     }
@@ -237,6 +254,7 @@ mod tests {
         let state = State {
             direction_cycle: 0,
             elves: set![Elf(2, 1), Elf(3, 1), Elf(2, 2), Elf(2, 4), Elf(3, 4)],
+            latest_step_moves: 5,
         };
         assert_eq!(
             Elf(2, 1).occupied_neighbours(&state.elves),
@@ -261,22 +279,27 @@ mod tests {
         let zero = State {
             direction_cycle: 0,
             elves: set![Elf(2, 1), Elf(3, 1), Elf(2, 2), Elf(2, 4), Elf(3, 4)],
+            latest_step_moves: 5,
         };
         let one = State {
             direction_cycle: 1,
             elves: set![Elf(2, 0), Elf(3, 0), Elf(2, 2), Elf(3, 3), Elf(2, 4)],
+            latest_step_moves: 3,
         };
         let two = State {
             direction_cycle: 2,
             elves: set![Elf(2, 1), Elf(3, 1), Elf(1, 2), Elf(4, 3), Elf(2, 5)],
+            latest_step_moves: 5,
         };
         let three = State {
             direction_cycle: 3,
             elves: set![Elf(2, 0), Elf(4, 1), Elf(0, 2), Elf(4, 3), Elf(2, 5)],
+            latest_step_moves: 3,
         };
         let four = State {
             direction_cycle: 0,
             elves: set![Elf(2, 0), Elf(4, 1), Elf(0, 2), Elf(4, 3), Elf(2, 5)],
+            latest_step_moves: 0,
         };
         assert_eq!(zero.next(), one);
         assert_eq!(one.next(), two);
@@ -312,6 +335,7 @@ mod tests {
                 Elf(2, 8),
                 Elf(6, 9)
             ],
+            latest_step_moves: 13,
         };
         assert_eq!(state.enclosed_empty_spaces(), 88);
     }
@@ -325,6 +349,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 23);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(20));
     }
 }
