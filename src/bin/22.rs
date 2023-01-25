@@ -406,29 +406,32 @@ impl CubeFillState {
             direction = direction.turn_right();
         }
         match (self.face, direction) {
-            (CubeFace::Top, Direction::Up) => (CubeFace::Back, 2),
+            (CubeFace::Top, Direction::Up) | (CubeFace::Bottom, Direction::Down) => {
+                (CubeFace::Back, 2)
+            }
             (CubeFace::Top, Direction::Right) => (CubeFace::Right, 1),
-            (CubeFace::Top, Direction::Down) => (CubeFace::Front, 0),
+            (CubeFace::Top, Direction::Down) | (CubeFace::Left, Direction::Right) => {
+                (CubeFace::Front, 0)
+            }
             (CubeFace::Top, Direction::Left) => (CubeFace::Left, 3),
-            (CubeFace::Left, Direction::Up) => (CubeFace::Top, 1),
-            (CubeFace::Left, Direction::Right) => (CubeFace::Front, 0),
+            (CubeFace::Left | CubeFace::Bottom, Direction::Up)
+            | (CubeFace::Right, Direction::Left) => (CubeFace::Top, 1),
             (CubeFace::Left, Direction::Down) => (CubeFace::Bottom, 3),
-            (CubeFace::Left, Direction::Left) => (CubeFace::Back, 0),
-            (CubeFace::Front, Direction::Up) => (CubeFace::Top, 0),
-            (CubeFace::Front, Direction::Right) => (CubeFace::Right, 0),
+            (CubeFace::Left, Direction::Left) | (CubeFace::Right, Direction::Right) => {
+                (CubeFace::Back, 0)
+            }
+            (CubeFace::Front, Direction::Right) | (CubeFace::Back, Direction::Left) => {
+                (CubeFace::Right, 0)
+            }
             (CubeFace::Front, Direction::Down) => (CubeFace::Bottom, 0),
-            (CubeFace::Front, Direction::Left) => (CubeFace::Left, 0),
+            (CubeFace::Front, Direction::Left) | (CubeFace::Back, Direction::Right) => {
+                (CubeFace::Left, 0)
+            }
             (CubeFace::Right, Direction::Up) => (CubeFace::Top, 3),
-            (CubeFace::Right, Direction::Right) => (CubeFace::Back, 0),
             (CubeFace::Right, Direction::Down) => (CubeFace::Bottom, 1),
-            (CubeFace::Right, Direction::Left) => (CubeFace::Front, 0),
-            (CubeFace::Back, Direction::Up) => (CubeFace::Top, 0),
-            (CubeFace::Back, Direction::Right) => (CubeFace::Left, 0),
+            (_, Direction::Up) => (CubeFace::Top, 0),
             (CubeFace::Back, Direction::Down) => (CubeFace::Bottom, 2),
-            (CubeFace::Back, Direction::Left) => (CubeFace::Right, 0),
-            (CubeFace::Bottom, Direction::Up) => (CubeFace::Front, 0),
             (CubeFace::Bottom, Direction::Right) => (CubeFace::Right, 3),
-            (CubeFace::Bottom, Direction::Down) => (CubeFace::Back, 2),
             (CubeFace::Bottom, Direction::Left) => (CubeFace::Left, 1),
         }
     }
