@@ -41,8 +41,5 @@ fn main() {
         })
         .sum();
 
-    println!(
-        "{}Total:{} {}{:.2}ms{}",
-        ANSI_BOLD, ANSI_RESET, ANSI_ITALIC, total, ANSI_RESET
-    );
+    println!("{ANSI_BOLD}Total:{ANSI_RESET} {ANSI_ITALIC}{total:.2}ms{ANSI_RESET}");
 }
