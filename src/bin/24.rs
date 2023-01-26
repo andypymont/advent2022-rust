@@ -7,6 +7,7 @@ struct State {
     time: u32,
     obstacles: Vec<u32>,
     elf: Vec<bool>,
+    goal: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,7 +31,7 @@ impl FromStr for State {
         let mut elf = Vec::new();
 
         for _ in 0..(width + 2) {
-            obstacles.push(1);
+            obstacles.push(WALL);
             elf.push(false);
         }
         for line in lines {
@@ -47,7 +48,7 @@ impl FromStr for State {
             }
         }
         for _ in 0..(width + 2) {
-            obstacles.push(1);
+            obstacles.push(WALL);
             elf.push(false);
         }
 
@@ -59,6 +60,7 @@ impl FromStr for State {
             time: 0,
             obstacles,
             elf,
+            goal: ((width + 2) * (height + 2)) + width,
         })
     }
 }
@@ -117,12 +119,33 @@ impl State {
         }
     }
 
+    fn clear_elf_positions(&mut self) {
+        self.elf = vec![false; self.obstacles.len()];
+    }
+
     fn has_elf_reached(&self, pos: usize) -> bool {
         self.elf[pos]
     }
 
     fn is_solved(&self) -> bool {
-        self.has_elf_reached(((self.width + 2) * (self.height + 2)) + self.width)
+        self.has_elf_reached(self.goal)
+    }
+
+    fn reset_for_trip(&mut self, trip: usize) {
+        self.clear_elf_positions();
+
+        let (start, goal) = {
+            let entrance = self.width + 3;
+            let other_side = ((self.width + 2) * (self.height + 2)) + self.width;
+
+            match trip % 2 {
+                1 => (other_side, entrance),
+                _ => (entrance, other_side),
+            }
+        };
+
+        self.elf[start] = true;
+        self.goal = goal;
     }
 }
 
@@ -139,8 +162,24 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 #[must_use]
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    if let Ok(mut state) = input.parse::<State>() {
+        while !state.is_solved() {
+            state.advance();
+        }
+        state.reset_for_trip(1);
+        while !state.is_solved() {
+            state.advance();
+        }
+        state.reset_for_trip(2);
+        while !state.is_solved() {
+            state.advance();
+        }
+
+        Some(state.time)
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -175,6 +214,7 @@ mod tests {
                     false, false, false, false, false, false, false, false, false, false, false,
                     false, false, false, false, false, false, false, false, false,
                 ],
+                goal: 54,
             })
         )
     }
@@ -198,6 +238,7 @@ mod tests {
                 false, false, false, false, false, false, false, false, false, false, false, false,
                 false, false, false, false,
             ],
+            goal: 54,
         };
         let one = State {
             width: 6,
@@ -216,6 +257,7 @@ mod tests {
                 false, false, false, false, false, false, false, false, false, false, false, false,
                 false, false, false, false,
             ],
+            goal: 54,
         };
         initial.advance();
         assert_eq!(initial, one,);
@@ -230,6 +272,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 24);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(54));
     }
 }
