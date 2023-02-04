@@ -1,164 +1,119 @@
-use std::collections::HashSet;
-use std::ops::{Add, Sub};
-use std::str::FromStr;
+const GRID_COLS: usize = 700;
+const GRID_ROWS: usize = 700;
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-struct Point(i32, i32);
-
-#[derive(Debug, PartialEq)]
 struct ParsePointError;
 
-impl FromStr for Point {
-    type Err = ParsePointError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(',').collect();
-        if parts.len() == 2 {
-            Ok(Point(
-                parts[0].parse().map_err(|_| ParsePointError)?,
-                parts[1].parse().map_err(|_| ParsePointError)?,
-            ))
-        } else {
-            Err(ParsePointError)
-        }
+fn read_point(text: &str) -> Result<(usize, usize), ParsePointError> {
+    let parts: Vec<&str> = text.split(',').collect();
+    if parts.len() == 2 {
+        let x: usize = parts[0].parse().map_err(|_| ParsePointError)?;
+        let y: usize = parts[1].parse().map_err(|_| ParsePointError)?;
+        Ok((x, y))
+    } else {
+        Err(ParsePointError)
     }
 }
 
-impl Add for Point {
-    type Output = Point;
+fn read_input(input: &str) -> Vec<bool> {
+    let mut rocks = vec![false; GRID_COLS * GRID_ROWS];
 
-    fn add(self, other: Self) -> Self::Output {
-        Point(self.0 + other.0, self.1 + other.1)
+    for line in input.lines() {
+        line.split(" -> ")
+            .filter_map(|text| match read_point(text) {
+                Ok(pt) => Some(pt),
+                Err(_) => None,
+            })
+            .reduce(|(ax, ay), (bx, by)| {
+                if ax == bx {
+                    let min_y = ay.min(by);
+                    let max_y = ay.max(by);
+                    for y in min_y..=max_y {
+                        rocks[(y * GRID_COLS) + ax] = true;
+                    }
+                } else if ay == by {
+                    let min_x = ax.min(bx);
+                    let max_x = ax.max(bx);
+                    for x in min_x..=max_x {
+                        rocks[(ay * GRID_COLS) + x] = true;
+                    }
+                }
+                (bx, by)
+            });
     }
-}
-
-impl Sub for Point {
-    type Output = Point;
-
-    fn sub(self, other: Self) -> Self::Output {
-        Point(self.0 - other.0, self.1 - other.1)
-    }
-}
-
-struct RockIterator {
-    point: Point,
-    delta: Point,
-    finish: Point,
-}
-
-impl RockIterator {
-    fn from_points(start: Point, finish: Point) -> Self {
-        let delta = Point((finish.0 - start.0).signum(), (finish.1 - start.1).signum());
-        RockIterator {
-            point: start - delta,
-            delta,
-            finish,
-        }
-    }
-}
-
-impl Iterator for RockIterator {
-    type Item = Point;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.point == self.finish {
-            None
-        } else {
-            self.point = self.point + self.delta;
-            Some(self.point)
-        }
-    }
-}
-
-fn read_rocks(input: &str) -> HashSet<Point> {
-    let mut rocks = HashSet::new();
-
-    input
-        .lines()
-        .map(|line| {
-            line.split(" -> ")
-                .filter_map(|text| match text.parse::<Point>() {
-                    Ok(pt) => Some(pt),
-                    Err(_) => None,
-                })
-                .reduce(|start, finish| {
-                    rocks.extend(RockIterator::from_points(start, finish));
-                    finish
-                })
-        })
-        .for_each(drop);
 
     rocks
 }
 
-const DOWN: Point = Point(0, 1);
-const DOWN_LEFT: Point = Point(-1, 1);
-const DOWN_RIGHT: Point = Point(1, 1);
-
-fn apply_gravity(sand: Point, occupied: &HashSet<Point>, floor: Floor) -> Option<Point> {
-    for direction in [DOWN, DOWN_LEFT, DOWN_RIGHT] {
-        let consider = sand + direction;
-        if !occupied.contains(&consider) && !floor.blocks(consider) {
-            return Some(consider);
-        }
-    }
-    None
-}
-
-#[derive(Clone, Copy, PartialEq)]
-enum FloorType {
-    EndlessVoid,
-    InfinitePlane,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-struct Floor {
-    floor_type: FloorType,
-    y: i32,
-}
-
-impl Floor {
-    fn blocks(self, pt: Point) -> bool {
-        match self.floor_type {
-            FloorType::EndlessVoid => false,
-            FloorType::InfinitePlane => pt.1 >= self.y,
-        }
-    }
-}
-
-fn resting_sand_quantity(input: &str, floor_type: FloorType) -> u32 {
-    let mut resting_sand = 0;
-    let mut occupied = read_rocks(input);
-    let floor = Floor {
-        floor_type,
-        y: occupied.iter().map(|pt| pt.1).max().unwrap_or(0) + 2,
-    };
-
-    let mut sand = Point(500, 0);
-    while sand.1 < floor.y {
-        if let Some(point) = apply_gravity(sand, &occupied, floor) {
-            sand = point;
-        } else {
-            occupied.insert(sand);
-            resting_sand += 1;
-            if sand == Point(500, 0) {
-                break;
-            }
-            sand = Point(500, 0);
-        }
-    }
-
-    resting_sand
-}
-
 #[must_use]
 pub fn part_one(input: &str) -> Option<u32> {
-    Some(resting_sand_quantity(input, FloorType::EndlessVoid))
+    let mut occupied = read_input(input);
+    let mut rocks = 0;
+    let maximum = {
+        if let Some(last_rock) = occupied.iter().rposition(|v| *v) {
+            let x = last_rock % GRID_COLS;
+            last_rock - x + (GRID_COLS * 2)
+        } else {
+            0
+        }
+    };
+
+    let mut rock = 500;
+    while rock <= maximum {
+        let down = rock + GRID_COLS;
+        let left = down - 1;
+        let right = down + 1;
+
+        rock = match (occupied[down], occupied[left], occupied[right]) {
+            (true, true, true) => {
+                occupied[rock] = true;
+                rocks += 1;
+                500
+            }
+            (false, _, _) => down,
+            (true, false, _) => left,
+            (true, true, false) => right,
+        }
+    }
+
+    Some(rocks)
 }
 
 #[must_use]
 pub fn part_two(input: &str) -> Option<u32> {
-    Some(resting_sand_quantity(input, FloorType::InfinitePlane))
+    let mut occupied = read_input(input);
+    let mut rocks = 0;
+    let maximum = {
+        if let Some(last_rock) = occupied.iter().rposition(|v| *v) {
+            let x = last_rock % GRID_COLS;
+            last_rock - x + (GRID_COLS * 2)
+        } else {
+            0
+        }
+    };
+
+    let mut rock = 500;
+    while !occupied[500] {
+        let down = rock + GRID_COLS;
+        let left = down - 1;
+        let right = down + 1;
+
+        rock = match (
+            occupied[down] || down >= maximum,
+            occupied[left] || left >= maximum,
+            occupied[right] || right >= maximum,
+        ) {
+            (true, true, true) => {
+                occupied[rock] = true;
+                rocks += 1;
+                500
+            }
+            (false, _, _) => down,
+            (true, false, _) => left,
+            (true, true, false) => right,
+        }
+    }
+
+    Some(rocks)
 }
 
 fn main() {
@@ -173,19 +128,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_rock_iterator() {
-        let mut rocks = RockIterator::from_points(Point(498, 4), Point(498, 6));
-        assert_eq!(rocks.next(), Some(Point(498, 4)));
-        assert_eq!(rocks.next(), Some(Point(498, 5)));
-        assert_eq!(rocks.next(), Some(Point(498, 6)));
-        assert_eq!(rocks.next(), None);
-    }
-
-    #[test]
-    fn test_read_rocks() {
+    fn test_read_input() {
         let input = advent_of_code::read_file("examples", 14);
-        let rocks = read_rocks(&input);
-        assert_eq!(rocks.len(), 20);
+        let rocks = read_input(&input);
+
+        assert_eq!(rocks.iter().map(|x| u32::from(*x)).sum::<u32>(), 20);
+        assert_eq!(rocks[0], false);
+        assert_eq!(rocks[(4 * GRID_COLS) + 498], true);
+        assert_eq!(rocks[(4 * GRID_COLS) + 500], false);
+        assert_eq!(rocks[(4 * GRID_COLS) + 502], true);
     }
 
     #[test]
