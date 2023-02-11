@@ -54,9 +54,7 @@ fn create_file(path: &str) -> Result<File, std::io::Error> {
 }
 
 fn main() {
-    let day = if let Ok(day) = parse_args() {
-        day
-    } else {
+    let Ok(day) = parse_args() else {
         eprintln!("Need to specify a day (as integer). example: `cargo scaffold 7`");
         process::exit(1);
     };

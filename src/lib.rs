@@ -41,6 +41,9 @@ macro_rules! solve {
     }};
 }
 
+/// # Panics
+/// 
+/// Will panic if `env::current_dir()` errors or if the file cannot be opened.
 #[must_use]
 pub fn read_file(folder: &str, day: u8) -> String {
     let cwd = env::current_dir().unwrap();
@@ -55,6 +58,9 @@ fn parse_time(val: &str, postfix: &str) -> f64 {
     val.split(postfix).next().unwrap().parse().unwrap()
 }
 
+/// # Panics
+/// 
+/// Will panic if the given output does not include "(elapsed: "
 #[must_use]
 pub fn parse_exec_time(output: &str) -> f64 {
     output.lines().fold(0_f64, |acc, l| {
@@ -153,6 +159,9 @@ pub mod aoc_cli {
         }
     }
 
+    /// # Errors
+    /// 
+    /// Will return Err if the given command cannot be found in AOC CLI.
     pub fn check() -> Result<(), CLIError> {
         Command::new("aoc")
             .arg("-V")
@@ -161,12 +170,18 @@ pub mod aoc_cli {
         Ok(())
     }
 
+    /// # Errors
+    /// 
+    /// Will return Err if AOC CLI returns an error reading the puzzle for the given day and year.
     pub fn read(day: u8, year: Option<u16>) -> Result<Output, CLIError> {
-        // TODO: output local puzzle if present.
         let args = build_args("read", &[], day, year);
         call_aoc_cli(&args)
     }
 
+    /// # Errors
+    /// 
+    /// Will return Err if the src/puzzles folder cannot be created or if the puzzle cannot
+    /// be downloaded and saved there.
     pub fn download(day: u8, year: Option<u16>) -> Result<Output, CLIError> {
         let input_path = get_input_path(day);
 
